@@ -1,0 +1,37 @@
+name: build
+
+on:
+  push:
+    branches: ['*']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: secrets
+    env:
+      etherscan_api_key: ${{ secrets.ETHERSCAN_API_KEY }}
+      goerli_rpc_key: ${{ secrets.GOERLI_RPC_KEY }}
+      mainnet_rpc_key: ${{ secrets.MAINNET_RPC_KEY }}
+      goerli_account_pk: ${{ secrets.GOERLI_ACCOUNT_PK }}
+      mainnet_account_pk: ${{ secrets.MAINNET_ACCOUNT_PK }}
+    steps:
+      - name: Tests and setup
+        uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - run: yarn install
+      - run: cp .env.example.workflow .env
+      - run: yarn prettier:fix
+      - run: yarn lint
+      - run: yarn test test/test_proposal_with_factory.js
+      - run: yarn test test/test_proposal_with_factory2.js
+
+      - name: Generate coverage
+        run: yarn coverage
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
