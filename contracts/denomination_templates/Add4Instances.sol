@@ -2,14 +2,10 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import "./TornadoInstanceCloneFactory.sol";
-import "./tornado_proxy/TornadoProxy.sol";
+import "../TornadoInstanceCloneFactory.sol";
+import "../tornado_proxy/TornadoProxy.sol";
 
-contract CreateFactoryAndAddInstancesProposal {
-  address public constant verifier = 0xce172ce1F20EC0B3728c9965470eaf994A03557A;
-  address public constant hasher = 0x83584f83f26aF4eDDA9CBe8C730bc87C364b28fe;
-  address public constant governance = 0x5efda50f22d34F262c29268506C5Fa42cB56A1Ce;
-
+contract Add4Instances {
   TornadoInstanceCloneFactory public immutable instanceFactory;
   address public immutable token;
   address public immutable proxyAddress;
@@ -19,17 +15,15 @@ contract CreateFactoryAndAddInstancesProposal {
   uint256 public immutable denomination3;
   uint256 public immutable denomination4;
 
-  event UpdatedInstanceForProxy(address indexed instance, address indexed token, uint256 indexed denomination);
+  event UpdatedInstanceForProxy(address instance, address token, uint256 denomination);
 
   constructor(
     address _proxyAddress,
+    address _instanceFactory,
     uint256[4] memory _denominations,
     address _token
   ) {
-    TornadoInstanceCloneFactory cachedFactory = new TornadoInstanceCloneFactory(verifier, hasher, 20);
-    cachedFactory.transferOwnership(governance);
-    instanceFactory = cachedFactory;
-
+    instanceFactory = TornadoInstanceCloneFactory(_instanceFactory);
     token = _token;
     proxyAddress = _proxyAddress;
 
@@ -44,11 +38,13 @@ contract CreateFactoryAndAddInstancesProposal {
 
     for (uint256 i = 0; i < 4; i++) {
       ITornadoInstance instance = ITornadoInstance(instanceFactory.createInstanceClone(denominations(i), token));
+
       TornadoProxy.Instance memory newInstanceData = TornadoProxy.Instance(
         true,
         IERC20(token),
         TornadoProxy.InstanceState.ENABLED
       );
+
       TornadoProxy.Tornado memory tornadoForUpdate = TornadoProxy.Tornado(instance, newInstanceData);
 
       tornadoProxy.updateInstance(tornadoForUpdate);

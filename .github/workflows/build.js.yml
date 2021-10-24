@@ -25,8 +25,7 @@ jobs:
       - run: cp .env.example.workflow .env
       - run: yarn prettier:fix
       - run: yarn lint
-      - run: yarn test test/test_proposal_with_factory.js
-      - run: yarn test test/test_proposal_with_factory2.js
+      - run: yarn test
 
       - name: Generate coverage
         run: yarn coverage

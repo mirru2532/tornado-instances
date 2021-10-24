@@ -1,12 +1,14 @@
 # Tornado Instances
 
-[![build](https://img.shields.io/github/workflow/status/mirru2532/tornado-instances/build)](https://github.com/h-ivor/tornado-instances/actions) [![Coveralls](https://img.shields.io/coveralls/github/mirru2352/tornado-instances)](https://coveralls.io/github/mirru2352/tornado-instances)
+[![build](https://img.shields.io/github/workflow/status/mirru2532/tornado-instances/build)](https://github.com/h-ivor/tornado-instances/actions) [![Coveralls](https://img.shields.io/coveralls/github/mirru2532/tornado-instances)](https://coveralls.io/github/mirru2532/tornado-instances)
 
 ## About
 
-This repository serves as a general template for deploying a tornado instance factory, deploying a proposal for the addition of multiple ERC20 tornado instances and proposing the registration of these instances with the Tornado Proxy (0x722122dF12D4e14e13Ac3b6895a86e84145b6967) through governance vote.
+This repository serves as a general template repository for deploying proposals for governance for the addition of new tornado ERC20 instances to the tornado proxy.
 
-The scripts should help users do this programmatically, quickly. There are three tasks (scripts). Note that non-task scripts have been deprecated but are still kept for more insight into the working process.
+The contracts offer a template for the addition of 4 new instances for an ERC20 token (the standard way to add new instances) and can also be slightly modified to add a custom amount. The scripts deploy the contracts.
+
+The resources folder contains data necessary for the instances to be deployed and must be filled out. They are initially filled out with the RAI instance data.
 
 ### How-To:
 
@@ -19,7 +21,7 @@ yarn
 cp .env.example .env
 ```
 
-Please fill out .env according to the template provided in it.
+Please fill out .env according to the template provided in it. Please ensure that all of the example values are set to the correct addresses.
 
 ### Testing and running scripts:
 
@@ -35,26 +37,20 @@ Running **tasks:**
 
 ```bash
 # a list of yarn scripts specifically for instance deployment
-"deploy:factory": "yarn hardhat --network mainnet deploy_factory",
 "deploy:proposal": "yarn hardhat --network mainnet deploy_proposal --factory-address",
-"deploy:factory:test": "yarn hardhat --network goerli deploy_factory",
 "deploy:proposal:test": "yarn hardhat --network goerli deploy_proposal --factory-address",
-"propose": "yarn hardhat --network mainnet propose_proposal --proposal-address"
+"deploy:proposal:factory": "yarn hardhat --network mainnet deploy_factory_proposal",
+"deploy:proposal:factory:test": "yarn hardhat --network goerli deploy_factory_proposal",
+"propose": "yarn hardhat --network mainnet propose_proposal --proposal-address",
 
 # as an example
-yarn deploy:factory
+yarn deploy:proposal:factory
 
 # to call a specific task
 yarn hardhat --network <network> <task> <args>
 ```
 
-Running scripts (deprecated):
-
-```bash
-yarn hardhat --network <network> run scripts/<script to run>
-```
-
-### Deploying a proposal for an instance update
+## Deploying a proposal for an instance update
 
 Open `resources/instances.js`, a single object which generates an instance contains the following fields (RAI as an example):
 
@@ -62,33 +58,15 @@ Open `resources/instances.js`, a single object which generates an instance conta
 {
     tokenAddress: "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919",
     denomination: "33333333333333333333",
-    domain: "rai-100.tornadocash.eth",
     symbol: "RAI",
     decimals: 18
 }
 ```
 
 `denomination` - tokens can only be deposited in certain denominations into instances, the above considers this instance to have a 100$ denomination, assuming RAI at 3$.
-`domain` - resolves to the address of the instance.
-Fill out each of these fields for your own token in the `instance.js` file. Please note that these contracts support deployments of exactly 4 denominations, as is the standard with which we have been deploying. If you would like to add more instances, contact me below or modify contracts independently.
+Fill out each of these fields for your own token in the `instance.js` file. This repo supports the addition of a maximum of 6 instances at once. It will automatically detect how many instances are to use.
 
-Now find the factory contract address, or deploy one if one has not been deployed (unlikely):
-
-**If factory not deployed:**
-
-```bash
-yarn deploy:factory
-```
-
-If testing:
-
-```bash
-yarn deploy:factory:test
-```
-
-**If factory is already deployed, continue here:**
-
-And now take the contract address which you should see in the command line interface and add this to:
+Now find the factory contract address:
 
 ```bash
 yarn deploy:proposal <factory address>

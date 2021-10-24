@@ -142,7 +142,7 @@ describe('Deployments test setup', () => {
           .toNumber(),
       )
       const overrides = {
-        gasLimit: BigNumber.from('6000000'),
+        gasLimit: BigNumber.from('30000000'),
       }
       await GovernanceContract.execute(id, overrides)
     })
@@ -233,9 +233,9 @@ describe('Deployments test setup', () => {
       TornadoProxy = await TornadoProxy.connect(whaleRAI)
 
       for (let i = 0; i < 4; i++) {
-        instanceAddresses[i] = await TornadoInstanceFactoryContract.instanceClones(
-          RAIToken.address,
+        instanceAddresses[i] = await TornadoInstanceFactoryContract.getInstanceAddress(
           denominations[i],
+          RAIToken.address,
         )
       }
 
@@ -331,5 +331,16 @@ describe('Deployments test setup', () => {
         )
       }
     })
+  })
+
+  after(async function () {
+    await ethers.provider.send('hardhat_reset', [
+      {
+        forking: {
+          jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.mainnet_rpc_key}`,
+          blockNumber: process.env.use_latest_block == 'true' ? undefined : 13017436,
+        },
+      },
+    ])
   })
 })

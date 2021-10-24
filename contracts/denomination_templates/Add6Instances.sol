@@ -2,14 +2,10 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import "./TornadoInstanceCloneFactory.sol";
-import "./tornado_proxy/TornadoProxy.sol";
+import "../TornadoInstanceCloneFactory.sol";
+import "../tornado_proxy/TornadoProxy.sol";
 
-contract CreateFactoryAndAddInstancesProposal {
-  address public constant verifier = 0xce172ce1F20EC0B3728c9965470eaf994A03557A;
-  address public constant hasher = 0x83584f83f26aF4eDDA9CBe8C730bc87C364b28fe;
-  address public constant governance = 0x5efda50f22d34F262c29268506C5Fa42cB56A1Ce;
-
+contract Add6Instances {
   TornadoInstanceCloneFactory public immutable instanceFactory;
   address public immutable token;
   address public immutable proxyAddress;
@@ -18,18 +14,18 @@ contract CreateFactoryAndAddInstancesProposal {
   uint256 public immutable denomination2;
   uint256 public immutable denomination3;
   uint256 public immutable denomination4;
+  uint256 public immutable denomination5;
+  uint256 public immutable denomination6;
 
-  event UpdatedInstanceForProxy(address indexed instance, address indexed token, uint256 indexed denomination);
+  event UpdatedInstanceForProxy(address instance, address token, uint256 denomination);
 
   constructor(
     address _proxyAddress,
-    uint256[4] memory _denominations,
+    address _instanceFactory,
+    uint256[6] memory _denominations,
     address _token
   ) {
-    TornadoInstanceCloneFactory cachedFactory = new TornadoInstanceCloneFactory(verifier, hasher, 20);
-    cachedFactory.transferOwnership(governance);
-    instanceFactory = cachedFactory;
-
+    instanceFactory = TornadoInstanceCloneFactory(_instanceFactory);
     token = _token;
     proxyAddress = _proxyAddress;
 
@@ -37,18 +33,22 @@ contract CreateFactoryAndAddInstancesProposal {
     denomination2 = _denominations[1];
     denomination3 = _denominations[2];
     denomination4 = _denominations[3];
+    denomination5 = _denominations[4];
+    denomination6 = _denominations[5];
   }
 
   function executeProposal() external {
     TornadoProxy tornadoProxy = TornadoProxy(proxyAddress);
 
-    for (uint256 i = 0; i < 4; i++) {
+    for (uint256 i = 0; i < 6; i++) {
       ITornadoInstance instance = ITornadoInstance(instanceFactory.createInstanceClone(denominations(i), token));
+
       TornadoProxy.Instance memory newInstanceData = TornadoProxy.Instance(
         true,
         IERC20(token),
         TornadoProxy.InstanceState.ENABLED
       );
+
       TornadoProxy.Tornado memory tornadoForUpdate = TornadoProxy.Tornado(instance, newInstanceData);
 
       tornadoProxy.updateInstance(tornadoForUpdate);
@@ -58,7 +58,11 @@ contract CreateFactoryAndAddInstancesProposal {
   }
 
   function denominations(uint256 index) private view returns (uint256) {
-    if (index > 2) {
+    if (index > 4) {
+      return denomination6;
+    } else if (index > 3) {
+      return denomination5;
+    } else if (index > 2) {
       return denomination4;
     } else if (index > 1) {
       return denomination3;

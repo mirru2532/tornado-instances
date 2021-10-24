@@ -3,23 +3,38 @@ const { task } = require('hardhat/config')
 const { BigNumber } = require('@ethersproject/bignumber')
 const instancesData = require('../resources/instances')
 
-task('deploy_proposal', 'deploy proposal that uses factory').setAction(async (taskArgs, hre) => {
-  const ProposalFactory = await hre.ethers.getContractFactory('CreateFactoryAndAddInstancesProposal')
+task('deploy_proposal', 'deploy proposal that uses factory')
+  .addParam('factoryAddress', 'address of factory')
+  .setAction(async (taskArgs, hre) => {
+    const contractName = `Add${instancesData.length}Instance${instancesData.length == 1 ? '' : 's'}`
 
-  let denominations = []
-  for (let i = 0; i < 4; i++) {
-    denominations[i] = BigNumber.from(instancesData[i].denomination)
-  }
-  const tokenAddress = instancesData[0].tokenAddress
+    const ProposalFactory = await hre.ethers.getContractFactory(contractName)
 
-  const ProposalContract = await ProposalFactory.deploy(denominations, tokenAddress)
+    let denominations = []
+    for (let i = 0; i < instancesData.length; i++) {
+      denominations[i] = BigNumber.from(instancesData[i].denomination)
+    }
 
-  await ProposalContract.deployTransaction.wait(5)
+    const tokenAddress = instancesData[0].tokenAddress
 
-  await hre.run('verify:verify', {
-    address: ProposalContract.address,
-    constructorArguments: [denominations, tokenAddress],
+    const ProposalContract = await ProposalFactory.deploy(
+      `${process.env.PROXY}`,
+      taskArgs.factoryAddress,
+      denominations.length == 1 ? denominations[0] : denominations,
+      tokenAddress,
+    )
+
+    await ProposalContract.deployTransaction.wait(5)
+
+    await hre.run('verify:verify', {
+      address: ProposalContract.address,
+      constructorArguments: [
+        `${process.env.PROXY}`,
+        taskArgs.factoryAddress,
+        denominations.length == 1 ? denominations[0] : denominations,
+        tokenAddress,
+      ],
+    })
+
+    console.log(`Verified ${contractName} deployed at: `, ProposalContract.address)
   })
-
-  console.log('Verified CreateFactoryAndAddInstancesProposal deployed at: ', ProposalContract.address)
-})

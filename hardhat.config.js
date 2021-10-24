@@ -6,7 +6,7 @@ require('hardhat-log-remover')
 require('solidity-coverage')
 
 require('./tasks/deploy_proposal.js')
-require('./tasks/deploy_factory.js')
+require('./tasks/deploy_factory_proposal.js')
 require('./tasks/propose_proposal.js')
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -38,7 +38,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: `https://mainnet.infura.io/v3/${process.env.mainnet_rpc_key}`,
-        blockNumber: 13017436,
+        blockNumber: process.env.use_latest_block == 'true' ? undefined : 13017436,
       },
       loggingEnabled: false,
     },
