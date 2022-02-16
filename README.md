@@ -80,6 +80,8 @@ yarn deploy:proposal:test <factory address>
 
 The last step, or first depending on if you are simply proposing the proposal, is taking the address of the deployed proposal and calling:
 
+// THIS IS ASSUMING YOU HAVE ENOUGH LOCKED TORN TO PROPOSE
+
 ```bash
 yarn propose <proposal address>
 ```

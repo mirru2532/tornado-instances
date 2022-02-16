@@ -37,7 +37,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: `https://mainnet.infura.io/v3/${process.env.mainnet_rpc_key}`,
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
         blockNumber: process.env.use_latest_block == 'true' ? undefined : 13017436,
       },
       loggingEnabled: false,

@@ -29,7 +29,7 @@ describe('Deployments test setup', () => {
 
   let TornadoInstanceFactoryContract
 
-  /// HARDCODED
+  /// HARDCODED // TODO take from config
   let denominations = [
     '33333333333333333333',
     '333333333333333333333',
@@ -145,13 +145,15 @@ describe('Deployments test setup', () => {
         gasLimit: BigNumber.from('30000000'),
       }
       await GovernanceContract.execute(id, overrides)
+      
+      expect(await GovernanceContract.state(id)).to.be.equal(ProposalState.Executed)
     })
 
     it('Should set correct params for factory', async () => {
       expect(await TornadoInstanceFactoryContract.verifier()).to.equal(Verifier)
       expect(await TornadoInstanceFactoryContract.hasher()).to.equal(Hasher)
       expect(await TornadoInstanceFactoryContract.merkleTreeHeight()).to.equal(20)
-      clog(await TornadoInstanceFactoryContract.implementation())
+      // clog(await TornadoInstanceFactoryContract.implementation())
     })
 
     it('Factory should be able to generate an instance without reverting', async () => {
@@ -251,11 +253,11 @@ describe('Deployments test setup', () => {
         secret: rbigint(31),
       })
 
-      const note = toHex(depo.preimage, 62)
-      const noteString = `tornado-RAI-33-1-${note}`
-      clog('Note: ', note)
-      clog('Note string: ', noteString)
-      clog('Commitment: ', toHex(depo.commitment))
+      // const note = toHex(depo.preimage, 62)
+      // const noteString = `tornado-RAI-33-1-${note}`
+      // clog('Note: ', note)
+      // clog('Note string: ', noteString)
+      // clog('Commitment: ', toHex(depo.commitment))
 
       await expect(RAIToken.approve(TornadoProxy.address, pE(5000000))).to.not.be.reverted
       TornadoInstance = await ethers.getContractAt(
@@ -300,11 +302,11 @@ describe('Deployments test setup', () => {
           nullifier: rbigint(31),
           secret: rbigint(31),
         })
-        const note = toHex(depo.preimage, 62)
-        const noteString = `tornado-RAI-33-1-${note}`
-        clog('Note: ', note)
-        clog('Note string: ', noteString)
-        clog('Commitment: ', toHex(depo.commitment))
+        // const note = toHex(depo.preimage, 62)
+        // const noteString = `tornado-RAI-33-1-${note}`
+        // clog('Note: ', note)
+        // clog('Note string: ', noteString)
+        // clog('Commitment: ', toHex(depo.commitment))
         const proxy = await TornadoProxy.connect(accounts[i])
 
         await expect(() =>
@@ -337,7 +339,7 @@ describe('Deployments test setup', () => {
     await ethers.provider.send('hardhat_reset', [
       {
         forking: {
-          jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.mainnet_rpc_key}`,
+          jsonRpcUrl: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
           blockNumber: process.env.use_latest_block == 'true' ? undefined : 13017436,
         },
       },
