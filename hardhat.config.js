@@ -5,9 +5,9 @@ require('@nomiclabs/hardhat-waffle')
 require('hardhat-log-remover')
 require('solidity-coverage')
 
-require('./tasks/deploy_proposal.js')
-require('./tasks/deploy_factory_proposal.js')
-require('./tasks/propose_proposal.js')
+// require('./tasks/deploy_proposal.js')
+// require('./tasks/deploy_factory_proposal.js')
+// require('./tasks/propose_proposal.js')
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -19,7 +19,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 2000,
+            runs: 200,
           },
         },
       },
@@ -28,7 +28,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 2000,
+            runs: 200,
           },
         },
       },

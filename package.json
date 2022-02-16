@@ -1,23 +1,24 @@
 {
   "name": "tornado-instances",
   "version": "1.0.0",
-  "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "node src/index.js",
     "eslint": "eslint --ext .js --ignore-path .gitignore .",
     "prettier:check": "prettier --check . --config .prettierrc",
     "prettier:fix": "prettier --write . --config .prettierrc",
     "lint": "yarn eslint && yarn prettier:check",
-    "deploy:proposal": "yarn hardhat --network mainnet deploy_proposal --factory-address",
-    "deploy:proposal:test": "yarn hardhat --network goerli deploy_proposal --factory-address",
-    "deploy:proposal:factory": "yarn hardhat --network mainnet deploy_factory_proposal",
-    "deploy:proposal:factory:test": "yarn hardhat --network goerli deploy_factory_proposal",
-    "propose": "yarn hardhat --network mainnet propose_proposal --proposal-address",
+    "compile": "yarn hardhat compile",
     "test": "yarn hardhat test",
-    "f:test": "yarn test && yarn clean",
     "clean": "yarn prettier:fix && yarn lint",
     "coverage": "yarn hardhat coverage --testfiles \"test/*.js\""
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "3.4.2",
+    "@openzeppelin/upgrades-core": "^1.0.1",
+    "torn-token": "^1.0.4",
+    "tornado-cli": "^0.0.1",
+    "tornado-core": "https://github.com/tornadocash/tornado-core.git",
+    "tornado-governance": "2.0.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -39,13 +40,5 @@
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.17",
     "websnark": "^0.0.5"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "3.4.2",
-    "@openzeppelin/upgrades-core": "^1.0.1",
-    "torn-token": "^1.0.4",
-    "tornado-cli": "^0.0.1",
-    "tornado-core": "https://github.com/tornadocash/tornado-core.git",
-    "tornado-governance": "^1.0.2"
   }
 }

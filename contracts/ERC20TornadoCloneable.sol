@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
+
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "tornado-core/contracts/ERC20Tornado.sol";
@@ -13,12 +14,10 @@ contract ERC20TornadoCloneable is ERC20Tornado {
     address _token
   ) external {
     require(denomination == 0 && levels == 0, "already initialized");
-    /// In Constructor: ERC20Tornado
+    
     token = IERC20(_token);
-    /// In Constructor: Tornado
     require(_denomination > 0, "denomination should be greater than 0");
     denomination = _denomination;
-    /// In Constructor: MerkleTreeWithHistory
     require(_merkleTreeHeight > 0, "_levels should be greater than zero");
     require(_merkleTreeHeight < 32, "_levels should be less than 32");
     levels = _merkleTreeHeight;
