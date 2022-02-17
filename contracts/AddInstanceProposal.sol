@@ -12,7 +12,7 @@ contract AddInstanceProposal {
   address public immutable token;
   uint24 public immutable uniswapPoolSwappingFee;
 
-  uint256 internal immutable numInstances;
+  uint256 public immutable numInstances;
   uint256 internal immutable denomination0;
   uint256 internal immutable denomination1;
   uint256 internal immutable denomination2;

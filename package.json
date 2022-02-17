@@ -18,7 +18,8 @@
     "torn-token": "^1.0.4",
     "tornado-cli": "^0.0.1",
     "tornado-core": "https://github.com/tornadocash/tornado-core.git",
-    "tornado-governance": "2.0.0"
+    "tornado-governance": "2.0.0",
+    "tornado-relayer-registry": "https://github.com/tornadocash/tornado-relayer-registry.git"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",

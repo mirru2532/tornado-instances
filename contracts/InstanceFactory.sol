@@ -10,11 +10,13 @@ import "./ERC20TornadoCloneable.sol";
 import "./AddInstanceProposal.sol";
 import "./interfaces/IGovernance.sol";
 
+
 contract InstanceFactory is Ownable {
   using Clones for address;
   using Address for address;
 
-  address immutable governance;
+  address public immutable governance;
+  address public immutable instanceRegistry;
   address public implementation;
   address public verifier;
   address public hasher;
@@ -25,19 +27,24 @@ contract InstanceFactory is Ownable {
   event NewTreeHeightSet(uint32 indexed newTreeHeight);
   event NewImplementationSet(address indexed newImplemenentation);
   event NewInstanceCloneCreated(address indexed clone);
+  event NewGovernanceProposalCreated(address indexed proposal);
 
   constructor(
     address _verifier,
     address _hasher,
     uint32 _merkleTreeHeight,
-    address _governance
+    address _governance,
+    address _instanceRegistry
   ) {
     verifier = _verifier;
     hasher = _hasher;
     merkleTreeHeight = _merkleTreeHeight;
+    governance = _governance;
+    instanceRegistry = _instanceRegistry;
+
     ERC20TornadoCloneable implContract = new ERC20TornadoCloneable(_verifier, _hasher);
     implementation = address(implContract);
-    governance = _governance;
+
     transferOwnership(_governance);
   }
 
@@ -59,26 +66,25 @@ contract InstanceFactory is Ownable {
   }
 
   function createNewProposal(
-    string calldata _description,
-    address _instanceRegistry,
     address _token,
     uint24 _uniswapPoolSwappingFee,
     uint256[] memory _denominations,
     uint32[] memory _protocolFees
   ) external returns (address) {
-    // TODO test params
-    require(_denominations.length == _protocolFees.length);
+    require(_token.isContract(), "Token is not contract"); // TODO should we check that such instance already exist?
+    require(_uniswapPoolSwappingFee > 0, "uniswapPoolSwappingFee is zero"); // TODO should we check > 0 ?
+    require(_denominations.length > 0, "Empty denominations");
+    require(_denominations.length == _protocolFees.length, "Incorrect denominations/fees length");
 
     address proposal = address(new AddInstanceProposal(
       address(this),
-      _instanceRegistry,
+      instanceRegistry,
       _token,
       _uniswapPoolSwappingFee,
       _denominations,
       _protocolFees
     ));
-
-    IGovernance(governance).propose(proposal, _description);
+    emit NewGovernanceProposalCreated(proposal);
 
     return proposal;
   }
