@@ -3,8 +3,6 @@ const { ethers, waffle } = hre
 const { loadFixture } = waffle
 const { expect } = require('chai')
 const { BigNumber } = require('@ethersproject/bignumber')
-const { rbigint, createDeposit, toHex, generateProof, initialize } = require('tornado-cli')
-const MixerContractABI = require('tornado-cli/build/contracts/Mixer.abi.json')
 const config = require('../config')
 const { getSignerFromAddress, minewait } = require('./utils')
 const { PermitSigner } = require('../scripts/permit.js')
@@ -39,13 +37,13 @@ describe('Instance Factory Tests', () => {
       config.COMP,
     )
 
-    instanceRegistry = await ethers.getContractAt(
+    const instanceRegistry = await ethers.getContractAt(
       'tornado-relayer-registry/contracts/tornado-proxy/InstanceRegistry.sol:InstanceRegistry',
       config.instanceRegistry,
     )
 
     // deploy instance factory
-    InstanceFactory = await ethers.getContractFactory('InstanceFactory')
+    const InstanceFactory = await ethers.getContractFactory('InstanceFactory')
     const instanceFactory = await InstanceFactory.connect(deployer).deploy(
       config.verifier,
       config.hasher,
@@ -137,10 +135,10 @@ describe('Instance Factory Tests', () => {
       [BigNumber.from(0).sub(config.creationFee), config.creationFee],
     )
 
-    let logs = await ethers.provider.getLogs(instanceFactory.filters.NewGovernanceProposalCreated())
+    let logs = await instanceFactory.queryFilter('NewGovernanceProposalCreated')
     const proposal = await ethers.getContractAt(
       'AddInstanceProposal',
-      ethers.utils.getAddress('0x' + logs[0].topics[1].slice(26)),
+      ethers.utils.getAddress('0x' + logs[0].topics[1].slice(-40)),
     )
 
     expect(await proposal.instanceFactory()).to.be.equal(instanceFactory.address)
@@ -183,12 +181,12 @@ describe('Instance Factory Tests', () => {
     )
     expect(await gov.state(id)).to.be.equal(ProposalState.AwaitingExecution)
 
-    tx = await gov.execute(id)
+    let tx = await gov.execute(id)
 
     expect(await gov.state(id)).to.be.equal(ProposalState.Executed)
 
     // check instance initialization --------------------------------
-    receipt = await tx.wait()
+    let receipt = await tx.wait()
     const instanceAddr = '0x' + receipt.events[0].topics[1].toString().slice(-40)
     const instance = await ethers.getContractAt('ERC20TornadoCloneable', instanceAddr)
 
@@ -261,10 +259,10 @@ describe('Instance Factory Tests', () => {
       [BigNumber.from(0).sub(config.creationFee), config.creationFee],
     )
 
-    let logs = await ethers.provider.getLogs(instanceFactory.filters.NewGovernanceProposalCreated())
+    let logs = await instanceFactory.queryFilter('NewGovernanceProposalCreated')
     const proposal = await ethers.getContractAt(
       'AddInstanceProposal',
-      ethers.utils.getAddress('0x' + logs[0].topics[1].slice(26)),
+      ethers.utils.getAddress('0x' + logs[0].topics[1].slice(-40)),
     )
 
     expect(await proposal.instanceFactory()).to.be.equal(instanceFactory.address)
@@ -275,123 +273,4 @@ describe('Instance Factory Tests', () => {
     expect(await proposal.protocolFeeByIndex(0)).to.be.equal(30)
     expect(await proposal.denominationByIndex(0)).to.be.equal(ethers.utils.parseEther('100'))
   })
-
-  // it('Should prepare data for instance deposit/withdraw tests', async () => {
-  //   const RAITokenAddress = '0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919'
-  //   await sendr('hardhat_impersonateAccount', ['0x46a0B4Fa58141ABa23185e79f7047A7dFd0FF100'])
-  //   RAIToken = await ethers.getContractAt(
-  //     '@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20',
-  //     RAITokenAddress,
-  //   )
-  //   whaleRAI = await ethers.getSigner('0x46a0B4Fa58141ABa23185e79f7047A7dFd0FF100')
-
-  //   const tx = {
-  //     to: whaleRAI.address,
-  //     value: pE(50),
-  //   }
-  //   await accounts[0].sendTransaction(tx)
-
-  //   whaleRAIBalance = await RAIToken.balanceOf(whaleRAI.address)
-  //   RAIToken = await RAIToken.connect(whaleRAI)
-  //   TornadoProxy = await TornadoProxy.connect(whaleRAI)
-
-  //   for (let i = 0; i < 4; i++) {
-  //     instanceAddresses[i] = await TornadoInstanceFactoryContract.getInstanceAddress(
-  //       denominations[i],
-  //       RAIToken.address,
-  //     )
-  //   }
-
-  //   mixerContract = await ethers.getContractAt(MixerContractABI, instanceAddresses[0])
-  //   mixerContract = await mixerContract.connect(whaleRAI)
-
-  //   snapshotId = await sendr('evm_snapshot', [])
-  // })
-
-  // it('Should test depositing and withdrawing into the new instance over proxy', async () => {
-  //   const depo = createDeposit({
-  //     nullifier: rbigint(31),
-  //     secret: rbigint(31),
-  //   })
-
-  //   // const note = toHex(depo.preimage, 62)
-  //   // const noteString = `tornado-RAI-33-1-${note}`
-  //   // clog('Note: ', note)
-  //   // clog('Note string: ', noteString)
-  //   // clog('Commitment: ', toHex(depo.commitment))
-
-  //   await expect(RAIToken.approve(TornadoProxy.address, pE(5000000))).to.not.be.reverted
-  //   TornadoInstance = await ethers.getContractAt(
-  //     'contracts/tornado_proxy/ITornadoInstance.sol:ITornadoInstance',
-  //     instanceAddresses[0],
-  //   )
-
-  //   await expect(() =>
-  //     TornadoProxy.deposit(instanceAddresses[0], toHex(depo.commitment), []),
-  //   ).to.changeTokenBalance(RAIToken, whaleRAI, BigNumber.from(0).sub(await TornadoInstance.denomination()))
-
-  //   let pevents = await mixerContract.queryFilter('Deposit')
-  //   await initialize({ merkleTreeHeight: 20 })
-
-  //   const { proof, args } = await generateProof({
-  //     deposit: depo,
-  //     recipient: whaleRAI.address,
-  //     events: pevents,
-  //   })
-
-  //   await expect(() =>
-  //     TornadoProxy.withdraw(TornadoInstance.address, proof, ...args),
-  //   ).to.changeTokenBalance(RAIToken, whaleRAI, await TornadoInstance.denomination())
-
-  //   await sendr('evm_revert', [snapshotId])
-  //   snapshotId = await sendr('evm_snapshot', [])
-  // })
-
-  // it('Should prepare for multiple account deposits', async () => {
-  //   let toSend = whaleRAIBalance.div(5)
-
-  //   for (let i = 0; i < 3; i++) {
-  //     await RAIToken.transfer(accounts[i].address, toSend)
-  //     const rai = await RAIToken.connect(accounts[i])
-  //     await rai.approve(TornadoProxy.address, pE(600000))
-  //   }
-  // })
-
-  // it('Should test depositing with multiple accounts over proxy', async () => {
-  //   for (let i = 0; i < 3; i++) {
-  //     const depo = createDeposit({
-  //       nullifier: rbigint(31),
-  //       secret: rbigint(31),
-  //     })
-  //     // const note = toHex(depo.preimage, 62)
-  //     // const noteString = `tornado-RAI-33-1-${note}`
-  //     // clog('Note: ', note)
-  //     // clog('Note string: ', noteString)
-  //     // clog('Commitment: ', toHex(depo.commitment))
-  //     const proxy = await TornadoProxy.connect(accounts[i])
-
-  //     await expect(() =>
-  //       proxy.deposit(TornadoInstance.address, toHex(depo.commitment), []),
-  //     ).to.changeTokenBalance(
-  //       RAIToken,
-  //       accounts[i],
-  //       BigNumber.from(0).sub(await TornadoInstance.denomination()),
-  //     )
-
-  //     let pevents = await mixerContract.queryFilter('Deposit')
-  //     await initialize({ merkleTreeHeight: 20 })
-
-  //     const { proof, args } = await generateProof({
-  //       deposit: depo,
-  //       recipient: accounts[i].address,
-  //       events: pevents,
-  //     })
-
-  //     await expect(() => proxy.withdraw(TornadoInstance.address, proof, ...args)).to.changeTokenBalance(
-  //       RAIToken,
-  //       accounts[i],
-  //       await TornadoInstance.denomination(),
-  //     )
-  //   }
-  // })
 })
