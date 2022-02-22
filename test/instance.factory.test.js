@@ -47,15 +47,6 @@ describe('Instance Factory Tests', () => {
       config.instanceRegistry,
     )
 
-    // execute relayer registry proposal
-    const proposalId = await gov.proposalCount()
-    expect(await gov.state(proposalId)).to.be.equal(ProposalState.Active)
-    await minewait(596400)
-    expect(await gov.state(proposalId)).to.be.equal(ProposalState.AwaitingExecution)
-
-    await gov.execute(proposalId)
-    expect(await gov.state(proposalId)).to.be.equal(ProposalState.Executed)
-
     // deploy instance factory
     InstanceFactory = await ethers.getContractFactory('InstanceFactory')
     const instanceFactory = await InstanceFactory.connect(deployer).deploy(
