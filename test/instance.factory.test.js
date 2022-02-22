@@ -7,7 +7,7 @@ const { rbigint, createDeposit, toHex, generateProof, initialize } = require('to
 const MixerContractABI = require('tornado-cli/build/contracts/Mixer.abi.json')
 const config = require('../config')
 const { getSignerFromAddress, minewait } = require('./utils')
-
+const { PermitSigner } = require('../scripts/permit.js')
 
 describe('Instance Factory Tests', () => {
   const ProposalState = {
@@ -26,14 +26,11 @@ describe('Instance Factory Tests', () => {
     const [sender, deployer, multisig] = await ethers.getSigners()
 
     const tornWhale = await getSignerFromAddress(config.tornWhale)
-    
-    const gov = await ethers.getContractAt(
-      'Governance',
-      config.governance,
-    )
+
+    const gov = await ethers.getContractAt('Governance', config.governance)
 
     const tornToken = await ethers.getContractAt(
-      '@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20',
+      '@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20',
       config.TORN,
     )
 
@@ -43,7 +40,7 @@ describe('Instance Factory Tests', () => {
     )
 
     instanceRegistry = await ethers.getContractAt(
-      'tornado-relayer-registry/contracts/tornado-proxy/InstanceRegistry.sol:InstanceRegistry', 
+      'tornado-relayer-registry/contracts/tornado-proxy/InstanceRegistry.sol:InstanceRegistry',
       config.instanceRegistry,
     )
 
@@ -54,11 +51,23 @@ describe('Instance Factory Tests', () => {
       config.hasher,
       config.merkleTreeHeight,
       config.governance,
-      config.instanceRegistry
+      config.instanceRegistry,
+      config.TORN,
+      config.creationFee,
     )
     await instanceFactory.deployed()
 
-    return { sender, deployer, multisig, tornWhale, gov, tornToken, compToken, instanceRegistry, instanceFactory }
+    return {
+      sender,
+      deployer,
+      multisig,
+      tornWhale,
+      gov,
+      tornToken,
+      compToken,
+      instanceRegistry,
+      instanceFactory,
+    }
   }
 
   it('Should have initialized all successfully', async function () {
@@ -73,11 +82,13 @@ describe('Instance Factory Tests', () => {
   it('Should set correct params for factory', async function () {
     const { instanceFactory } = await loadFixture(fixture)
 
-    expect( await instanceFactory.governance()).to.be.equal(config.governance)
-    expect( await instanceFactory.verifier()).to.be.equal(config.verifier)
-    expect( await instanceFactory.hasher()).to.be.equal(config.hasher)
-    expect( await instanceFactory.merkleTreeHeight()).to.be.equal(config.merkleTreeHeight)
+    expect(await instanceFactory.governance()).to.be.equal(config.governance)
+    expect(await instanceFactory.verifier()).to.be.equal(config.verifier)
+    expect(await instanceFactory.hasher()).to.be.equal(config.hasher)
+    expect(await instanceFactory.merkleTreeHeight()).to.be.equal(config.merkleTreeHeight)
     expect(await instanceFactory.implementation()).to.exist
+    expect(await instanceFactory.creationFee()).to.be.equal(config.creationFee)
+    expect(await instanceFactory.torn()).to.be.equal(config.TORN)
   })
 
   it('Governance should be able to set factory params', async function () {
@@ -87,48 +98,58 @@ describe('Instance Factory Tests', () => {
 
     const govSigner = await getSignerFromAddress(gov.address)
     instanceFactory = await instanceFactory.connect(govSigner)
-    
+
     await instanceFactory.setVerifier(addressZero)
     await instanceFactory.setHasher(addressZero)
     await instanceFactory.setMerkleTreeHeight(1)
+    await instanceFactory.setCreationFee(0)
 
-    expect( await instanceFactory.verifier()).to.be.equal(addressZero)
-    expect( await instanceFactory.hasher()).to.be.equal(addressZero)
-    expect( await instanceFactory.merkleTreeHeight()).to.be.equal(1)
+    expect(await instanceFactory.verifier()).to.be.equal(addressZero)
+    expect(await instanceFactory.hasher()).to.be.equal(addressZero)
+    expect(await instanceFactory.merkleTreeHeight()).to.be.equal(1)
+    expect(await instanceFactory.creationFee()).to.be.equal(0)
 
     await instanceFactory.setVerifier(config.verifier)
     await instanceFactory.setHasher(config.hasher)
     await instanceFactory.setMerkleTreeHeight(config.merkleTreeHeight)
+    await instanceFactory.setCreationFee(config.creationFee)
 
-    expect( await instanceFactory.verifier()).to.be.equal(config.verifier)
-    expect( await instanceFactory.hasher()).to.be.equal(config.hasher)
-    expect( await instanceFactory.merkleTreeHeight()).to.be.equal(config.merkleTreeHeight)
+    expect(await instanceFactory.verifier()).to.be.equal(config.verifier)
+    expect(await instanceFactory.hasher()).to.be.equal(config.hasher)
+    expect(await instanceFactory.merkleTreeHeight()).to.be.equal(config.merkleTreeHeight)
+    expect(await instanceFactory.creationFee()).to.be.equal(config.creationFee)
   })
 
   it('Should successfully deploy/propose/execute proposal - add instance', async function () {
-    let { instanceFactory, gov, instanceRegistry, tornWhale, tornToken } = await loadFixture(fixture)
+    let { sender, instanceFactory, gov, instanceRegistry, tornWhale, tornToken } = await loadFixture(fixture)
 
     // deploy proposal ----------------------------------------------
-    let tx = await instanceFactory.createNewProposal(
-      config.COMP,
-      3000,
-      [ethers.utils.parseEther('100')],
-      [30]
-    )
-    let receipt = await tx.wait()
+    await tornToken.connect(tornWhale).transfer(sender.address, config.creationFee)
+    await tornToken.approve(instanceFactory.address, config.creationFee)
 
-    const proposal = await ethers.getContractAt(
-      'AddInstanceProposal', 
-      receipt.events[0].args[0],
+    await expect(() =>
+      instanceFactory
+        .connect(sender)
+        .createProposalApprove(config.COMP, 3000, [ethers.utils.parseEther('100')], [30]),
+    ).to.changeTokenBalances(
+      tornToken,
+      [sender, gov],
+      [BigNumber.from(0).sub(config.creationFee), config.creationFee],
     )
-    
-    expect( await proposal.instanceFactory()).to.be.equal(instanceFactory.address)
-    expect( await proposal.instanceRegistry()).to.be.equal(instanceRegistry.address)
-    expect( await proposal.token()).to.be.equal(config.COMP)
-    expect( await proposal.uniswapPoolSwappingFee()).to.be.equal(3000)
-    expect( await proposal.numInstances()).to.be.equal(1)
-    expect( await proposal.protocolFeeByIndex(0)).to.be.equal(30)
-    expect( await proposal.denominationByIndex(0)).to.be.equal(ethers.utils.parseEther('100'))
+
+    let logs = await ethers.provider.getLogs(instanceFactory.filters.NewGovernanceProposalCreated())
+    const proposal = await ethers.getContractAt(
+      'AddInstanceProposal',
+      ethers.utils.getAddress('0x' + logs[0].topics[1].slice(26)),
+    )
+
+    expect(await proposal.instanceFactory()).to.be.equal(instanceFactory.address)
+    expect(await proposal.instanceRegistry()).to.be.equal(instanceRegistry.address)
+    expect(await proposal.token()).to.be.equal(config.COMP)
+    expect(await proposal.uniswapPoolSwappingFee()).to.be.equal(3000)
+    expect(await proposal.numInstances()).to.be.equal(1)
+    expect(await proposal.protocolFeeByIndex(0)).to.be.equal(30)
+    expect(await proposal.denominationByIndex(0)).to.be.equal(ethers.utils.parseEther('100'))
 
     // propose proposal ---------------------------------------------
     let response, id, state
@@ -147,7 +168,7 @@ describe('Instance Factory Tests', () => {
     expect(args.target).to.be.equal(proposal.address)
     expect(args.description).to.be.equal('COMP token instance proposal')
     expect(state).to.be.equal(ProposalState.Pending)
-    
+
     // execute proposal ---------------------------------------------
     await minewait((await gov.VOTING_DELAY()).add(1).toNumber())
     await expect(gov.castVote(id, true)).to.not.be.reverted
@@ -161,7 +182,7 @@ describe('Instance Factory Tests', () => {
         .toNumber(),
     )
     expect(await gov.state(id)).to.be.equal(ProposalState.AwaitingExecution)
-    
+
     tx = await gov.execute(id)
 
     expect(await gov.state(id)).to.be.equal(ProposalState.Executed)
@@ -169,25 +190,92 @@ describe('Instance Factory Tests', () => {
     // check instance initialization --------------------------------
     receipt = await tx.wait()
     const instanceAddr = '0x' + receipt.events[0].topics[1].toString().slice(-40)
-    const instance = await ethers.getContractAt(
-      'ERC20TornadoCloneable', 
-      instanceAddr,
-    )
+    const instance = await ethers.getContractAt('ERC20TornadoCloneable', instanceAddr)
 
-    expect( await instance.token()).to.be.equal(config.COMP)
-    expect( await instance.verifier()).to.be.equal(config.verifier)
-    expect( await instance.hasher()).to.be.equal(config.hasher)
-    expect( await instance.levels()).to.be.equal(config.merkleTreeHeight)
-    expect( await instance.denomination()).to.equal(ethers.utils.parseEther('100'))
+    expect(await instance.token()).to.be.equal(config.COMP)
+    expect(await instance.verifier()).to.be.equal(config.verifier)
+    expect(await instance.hasher()).to.be.equal(config.hasher)
+    expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
+    expect(await instance.denomination()).to.equal(ethers.utils.parseEther('100'))
 
-    const instanceData =  await instanceRegistry.instances(instance.address)
+    const instanceData = await instanceRegistry.instances(instance.address)
     expect(instanceData.isERC20).to.be.equal(true)
     expect(instanceData.token).to.be.equal(config.COMP)
     expect(instanceData.state).to.be.equal(1)
     expect(instanceData.uniswapPoolSwappingFee).to.be.equal(3000)
     expect(instanceData.protocolFeePercentage).to.be.equal(30)
   })
-  
+
+  it('Should successfully deploy proposal with permit', async function () {
+    let { instanceFactory, gov, instanceRegistry, tornWhale, tornToken } = await loadFixture(fixture)
+
+    const privateKey = '0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3'
+    const publicKey = '0x' + ethers.utils.computeAddress(Buffer.from(privateKey.slice(2), 'hex'))
+    const sender = await ethers.getSigner(publicKey.slice(2))
+
+    await expect(() =>
+      tornToken.connect(tornWhale).transfer(sender.address, config.creationFee),
+    ).to.changeTokenBalances(
+      tornToken,
+      [tornWhale, sender],
+      [BigNumber.from(0).sub(config.creationFee), config.creationFee],
+    )
+
+    // prepare permit data
+    const domain = {
+      name: await tornToken.name(),
+      version: '1',
+      chainId: 1,
+      verifyingContract: tornToken.address,
+    }
+
+    const curTimestamp = Math.trunc(new Date().getTime() / 1000)
+    const args = {
+      owner: sender,
+      spender: instanceFactory.address,
+      value: config.creationFee,
+      nonce: 0,
+      deadline: curTimestamp + 1000,
+    }
+
+    const permitSigner = new PermitSigner(domain, args)
+    const signature = await permitSigner.getSignature(privateKey)
+    const signer = await permitSigner.getSignerAddress(args, signature.hex)
+    expect(signer).to.equal(sender.address)
+
+    await expect(() =>
+      instanceFactory.createProposalPermit(
+        config.COMP,
+        3000,
+        [ethers.utils.parseEther('100')],
+        [30],
+        sender.address,
+        args.deadline.toString(),
+        signature.v,
+        signature.r,
+        signature.s,
+      ),
+    ).to.changeTokenBalances(
+      tornToken,
+      [sender, gov],
+      [BigNumber.from(0).sub(config.creationFee), config.creationFee],
+    )
+
+    let logs = await ethers.provider.getLogs(instanceFactory.filters.NewGovernanceProposalCreated())
+    const proposal = await ethers.getContractAt(
+      'AddInstanceProposal',
+      ethers.utils.getAddress('0x' + logs[0].topics[1].slice(26)),
+    )
+
+    expect(await proposal.instanceFactory()).to.be.equal(instanceFactory.address)
+    expect(await proposal.instanceRegistry()).to.be.equal(instanceRegistry.address)
+    expect(await proposal.token()).to.be.equal(config.COMP)
+    expect(await proposal.uniswapPoolSwappingFee()).to.be.equal(3000)
+    expect(await proposal.numInstances()).to.be.equal(1)
+    expect(await proposal.protocolFeeByIndex(0)).to.be.equal(30)
+    expect(await proposal.denominationByIndex(0)).to.be.equal(ethers.utils.parseEther('100'))
+  })
+
   // it('Should prepare data for instance deposit/withdraw tests', async () => {
   //   const RAITokenAddress = '0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919'
   //   await sendr('hardhat_impersonateAccount', ['0x46a0B4Fa58141ABa23185e79f7047A7dFd0FF100'])

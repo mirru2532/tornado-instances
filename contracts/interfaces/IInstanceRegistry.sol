@@ -6,8 +6,10 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IInstanceRegistry {
-
-  enum InstanceState { DISABLED, ENABLED}
+  enum InstanceState {
+    DISABLED,
+    ENABLED
+  }
 
   struct Instance {
     bool isERC20;

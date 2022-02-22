@@ -70,19 +70,25 @@ contract AddInstanceProposal {
   }
 
   function denominationByIndex(uint256 _index) public view returns (uint256) {
-    if (_index == 0) { return denomination0; }
-    else if (_index == 1) { return denomination1; }
-    else if (_index == 2) { return denomination2; }
-    else {
+    if (_index == 0) {
+      return denomination0;
+    } else if (_index == 1) {
+      return denomination1;
+    } else if (_index == 2) {
+      return denomination2;
+    } else {
       revert("Invalid instance index");
     }
   }
 
   function protocolFeeByIndex(uint256 _index) public view returns (uint32) {
-    if (_index == 0) { return protocolFee0; }
-    else if (_index == 1) { return protocolFee1; }
-    else if (_index == 2) { return protocolFee2; }
-    else {
+    if (_index == 0) {
+      return protocolFee0;
+    } else if (_index == 1) {
+      return protocolFee1;
+    } else if (_index == 2) {
+      return protocolFee2;
+    } else {
       revert("Invalid instance index");
     }
   }

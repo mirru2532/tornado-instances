@@ -14,7 +14,7 @@ contract ERC20TornadoCloneable is ERC20Tornado {
     address _token
   ) external {
     require(denomination == 0 && levels == 0, "already initialized");
-    
+
     token = IERC20(_token);
     require(_denomination > 0, "denomination should be greater than 0");
     denomination = _denomination;
