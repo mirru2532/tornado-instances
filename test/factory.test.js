@@ -204,6 +204,115 @@ describe('Instance Factory Tests', () => {
     expect(instanceData.protocolFeePercentage).to.be.equal(30)
   })
 
+  it('Should successfully deploy/propose/execute proposal - add instances', async function () {
+    let { sender, instanceFactory, gov, instanceRegistry, tornWhale, tornToken } = await loadFixture(fixture)
+
+    // deploy proposal ----------------------------------------------
+    await tornToken.connect(tornWhale).transfer(sender.address, config.creationFee)
+    await tornToken.approve(instanceFactory.address, config.creationFee)
+
+    await expect(() =>
+      instanceFactory
+        .connect(sender)
+        .createProposalApprove(
+          config.COMP,
+          3000,
+          [ethers.utils.parseEther('100'), ethers.utils.parseEther('1000')],
+          [30, 30],
+        ),
+    ).to.changeTokenBalances(
+      tornToken,
+      [sender, gov],
+      [BigNumber.from(0).sub(config.creationFee), config.creationFee],
+    )
+
+    let logs = await instanceFactory.queryFilter('NewGovernanceProposalCreated')
+    const proposal = await ethers.getContractAt(
+      'AddInstanceProposal',
+      ethers.utils.getAddress('0x' + logs[0].topics[1].slice(-40)),
+    )
+
+    expect(await proposal.instanceFactory()).to.be.equal(instanceFactory.address)
+    expect(await proposal.instanceRegistry()).to.be.equal(instanceRegistry.address)
+    expect(await proposal.token()).to.be.equal(config.COMP)
+    expect(await proposal.uniswapPoolSwappingFee()).to.be.equal(3000)
+    expect(await proposal.numInstances()).to.be.equal(2)
+    expect(await proposal.protocolFeeByIndex(0)).to.be.equal(30)
+    expect(await proposal.protocolFeeByIndex(1)).to.be.equal(30)
+    expect(await proposal.denominationByIndex(0)).to.be.equal(ethers.utils.parseEther('100'))
+    expect(await proposal.denominationByIndex(1)).to.be.equal(ethers.utils.parseEther('1000'))
+
+    // propose proposal ---------------------------------------------
+    let response, id, state
+    gov = await gov.connect(tornWhale)
+    await tornToken.connect(tornWhale).approve(gov.address, ethers.utils.parseEther('26000'))
+    await gov.lockWithApproval(ethers.utils.parseEther('26000'))
+
+    response = await gov.propose(proposal.address, 'COMP token instances proposal')
+    id = await gov.latestProposalIds(tornWhale.address)
+    state = await gov.state(id)
+
+    const { events } = await response.wait()
+    const args = events.find(({ event }) => event == 'ProposalCreated').args
+    expect(args.id).to.be.equal(id)
+    expect(args.proposer).to.be.equal(tornWhale.address)
+    expect(args.target).to.be.equal(proposal.address)
+    expect(args.description).to.be.equal('COMP token instances proposal')
+    expect(state).to.be.equal(ProposalState.Pending)
+
+    // execute proposal ---------------------------------------------
+    await minewait((await gov.VOTING_DELAY()).add(1).toNumber())
+    await expect(gov.castVote(id, true)).to.not.be.reverted
+    expect(await gov.state(id)).to.be.equal(ProposalState.Active)
+    await minewait(
+      (
+        await gov.VOTING_PERIOD()
+      )
+        .add(await gov.EXECUTION_DELAY())
+        .add(96400)
+        .toNumber(),
+    )
+    expect(await gov.state(id)).to.be.equal(ProposalState.AwaitingExecution)
+
+    await gov.execute(id)
+
+    expect(await gov.state(id)).to.be.equal(ProposalState.Executed)
+
+    // check instances initialization -------------------------------
+    logs = await instanceFactory.queryFilter('NewInstanceCloneCreated')
+    let instanceAddr = '0x' + logs[0].topics[1].slice(-40)
+    let instance = await ethers.getContractAt('ERC20TornadoCloneable', instanceAddr)
+
+    expect(await instance.token()).to.be.equal(config.COMP)
+    expect(await instance.verifier()).to.be.equal(config.verifier)
+    expect(await instance.hasher()).to.be.equal(config.hasher)
+    expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
+    expect(await instance.denomination()).to.equal(ethers.utils.parseEther('100'))
+
+    let instanceData = await instanceRegistry.instances(instance.address)
+    expect(instanceData.isERC20).to.be.equal(true)
+    expect(instanceData.token).to.be.equal(config.COMP)
+    expect(instanceData.state).to.be.equal(1)
+    expect(instanceData.uniswapPoolSwappingFee).to.be.equal(3000)
+    expect(instanceData.protocolFeePercentage).to.be.equal(30)
+
+    instanceAddr = '0x' + logs[1].topics[1].slice(-40)
+    instance = await ethers.getContractAt('ERC20TornadoCloneable', instanceAddr)
+
+    expect(await instance.token()).to.be.equal(config.COMP)
+    expect(await instance.verifier()).to.be.equal(config.verifier)
+    expect(await instance.hasher()).to.be.equal(config.hasher)
+    expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
+    expect(await instance.denomination()).to.equal(ethers.utils.parseEther('1000'))
+
+    instanceData = await instanceRegistry.instances(instance.address)
+    expect(instanceData.isERC20).to.be.equal(true)
+    expect(instanceData.token).to.be.equal(config.COMP)
+    expect(instanceData.state).to.be.equal(1)
+    expect(instanceData.uniswapPoolSwappingFee).to.be.equal(3000)
+    expect(instanceData.protocolFeePercentage).to.be.equal(30)
+  })
+
   it('Should successfully deploy proposal with permit', async function () {
     let { instanceFactory, gov, instanceRegistry, tornWhale, tornToken } = await loadFixture(fixture)
 
