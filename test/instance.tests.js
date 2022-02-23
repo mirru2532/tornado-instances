@@ -6,6 +6,7 @@ const { BigNumber } = require('@ethersproject/bignumber')
 const { rbigint, createDeposit, toHex, generateProof, initialize } = require('tornado-cli')
 const config = require('../config')
 const { getSignerFromAddress, minewait } = require('./utils')
+const { generate } = require('../src/generateAddresses')
 
 describe('Instance Factory Tests', () => {
   const ProposalState = {
@@ -46,18 +47,18 @@ describe('Instance Factory Tests', () => {
       config.router,
     )
 
-    // deploy instance factory
-    const InstanceFactory = await ethers.getContractFactory('InstanceFactory')
-    const instanceFactory = await InstanceFactory.connect(deployer).deploy(
-      config.verifier,
-      config.hasher,
-      config.merkleTreeHeight,
-      config.governance,
-      config.instanceRegistry,
-      config.TORN,
-      config.creationFee,
+    // deploy InstanceFactory with CREATE2
+    const singletonFactory = await ethers.getContractAt(
+      'SingletonFactory',
+      config.singletonFactoryVerboseWrapper,
     )
-    await instanceFactory.deployed()
+    const contracts = await generate()
+    if ((await ethers.provider.getCode(contracts.factoryContract.address)) == '0x') {
+      await singletonFactory.deploy(contracts.factoryContract.bytecode, config.salt, {
+        gasLimit: config.deployGasLimit,
+      })
+    }
+    const instanceFactory = await ethers.getContractAt('InstanceFactory', contracts.factoryContract.address)
 
     // deploy proposal
     await tornToken.connect(tornWhale).transfer(sender.address, config.creationFee)

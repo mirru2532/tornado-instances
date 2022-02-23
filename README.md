@@ -41,3 +41,24 @@ yarn test
 ```
 
 Test scripts cover instance factory deployment, proposal deployment and executing proposal.
+
+## Deploy
+
+Check config.js for actual values.
+
+With `salt` = `0x0000000000000000000000000000000000000000000000000000000047941987` address must be:
+
+1. `InstanceFactory` - `0x7a6e627DC6F66617b4A74Be097A8f56c622fa24c`
+
+Check addresses with current config:
+
+```shell
+yarn compile
+node -e 'require("./src/generateAddresses").generateWithLog()'
+```
+
+Deploy InstanceFactory:
+
+```shell
+npx hardhat run scripts/deployInstanceFactory.js --network mainnet
+```

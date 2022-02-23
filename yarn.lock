@@ -5275,9 +5275,9 @@ blake2b-wasm@^1.1.0:
   dependencies:
     nanoassert "^1.0.0"
 
-"blake2b-wasm@git+https://github.com/jbaylina/blake2b-wasm.git":
+"blake2b-wasm@https://github.com/jbaylina/blake2b-wasm.git":
   version "2.1.0"
-  resolved "git+https://github.com/jbaylina/blake2b-wasm.git#0d5f024b212429c7f50a7f533aa3a2406b5b42b3"
+  resolved "https://github.com/jbaylina/blake2b-wasm.git#0d5f024b212429c7f50a7f533aa3a2406b5b42b3"
   dependencies:
     nanoassert "^1.0.0"
 
@@ -17429,9 +17429,9 @@ tornado-governance@^1.0.3:
     "@openzeppelin/upgrades-core" "^1.0.1"
     torn-token "^1.0.0"
 
-"tornado-relayer-registry@https://github.com/tornadocash/tornado-relayer-registry.git":
+"tornado-relayer-registry@https://github.com/Rezan-vm/tornado-relayer-registry.git":
   version "1.0.0"
-  resolved "https://github.com/tornadocash/tornado-relayer-registry.git#a5bdbdb4cd44d3951ef6445cce027ee06b5d3400"
+  resolved "https://github.com/Rezan-vm/tornado-relayer-registry.git#c462d274778e57008414efe9e432dbc03bfbf739"
   dependencies:
     "@openzeppelin/contracts" "3.2.0"
     "@openzeppelin/hardhat-upgrades" "1.10.0"
@@ -17444,6 +17444,7 @@ tornado-governance@^1.0.3:
     tornado-anonymity-mining "^2.1.5"
     tornado-cli "^0.0.1"
     tornado-governance "2.0.0"
+    tornado-trees "^0.0.11"
 
 tornado-trees@^0.0.11:
   version "0.0.11"
