@@ -26,10 +26,10 @@ Anyone can create governance proposal for the addition of a new ERC20 instance b
 Setting up the repository:
 
 ```bash
-git clone https://github.com/mirru2532/tornado-instances.git
-cd tornado-instances
-yarn
-cp .env.example .env
+    git clone https://github.com/mirru2532/tornado-instances.git
+    cd tornado-instances
+    yarn
+    cp .env.example .env
 ```
 
 Please fill out .env according to the template provided in it. Please ensure that all of the example values are set to the correct addresses.
@@ -37,7 +37,7 @@ Please fill out .env according to the template provided in it. Please ensure tha
 To run test scripts:
 
 ```bash
-yarn test
+    yarn test
 ```
 
 Test scripts cover instance factory deployment, proposal deployment and executing proposal.
@@ -53,12 +53,23 @@ With `salt` = `0x000000000000000000000000000000000000000000000000000000004794198
 Check addresses with current config:
 
 ```shell
-yarn compile
-node -e 'require("./src/generateAddresses").generateWithLog()'
+    yarn compile
+    node -e 'require("./src/generateAddresses").generateWithLog()'
 ```
 
 Deploy InstanceFactory:
 
 ```shell
-npx hardhat run scripts/deployInstanceFactory.js --network mainnet
+    yarn hardhat run scripts/deployInstanceFactory.js --network mainnet
+```
+
+Verify InstanceFactory on Etherscan:
+
+```
+    yarn hardhat verify --network <network-name> <contract-address> <constructor-arguments>
+```
+
+With current config:
+```
+    yarn hardhat verify --network mainnet 0x7a6e627DC6F66617b4A74Be097A8f56c622fa24c 0xce172ce1F20EC0B3728c9965470eaf994A03557A 0x83584f83f26aF4eDDA9CBe8C730bc87C364b28fe 20 0x5efda50f22d34F262c29268506C5Fa42cB56A1Ce 0xB20c66C4DE72433F3cE747b58B86830c459CA911 0x77777FeDdddFfC19Ff86DB637967013e6C6A116C 200000000000000000000
 ```

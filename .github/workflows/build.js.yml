@@ -18,7 +18,7 @@ jobs:
       - run: yarn cache clean --all
       - run: yarn install --network-concurrency 1
       - run: yarn lint
-      - run: yarn build
+      - run: yarn compile
       - run: yarn test
         env:
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
