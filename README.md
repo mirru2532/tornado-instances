@@ -16,6 +16,11 @@ Anyone can create governance proposal for the addition of a new ERC20 instance b
 1. `max number of new instances in one proposal` - the current version supports the addition of a maximum of 3 instances at once.
 2. `proposal creation fee` - this fee is charged from creator of proposal during `createProposalApprove/createProposalPermit` factory method execution. It can be changed by governance. Default value is stored in `config.js`.
 
+## Warnings
+
+1. This version of the factory creates a proposal for **immutable** Tornado instance initialization.
+2. Users should manually propose a proposal after its creation using the factory (in governance UI for example). As `propose()` method caller must have 1000 TORN locked in the governance. Moreover, the proposer can't propose more than one proposal simultaneously.
+
 ## Tests
 
 Setting up the repository:

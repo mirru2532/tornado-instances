@@ -105,8 +105,8 @@ contract InstanceFactory is Ownable {
     uint256[] memory _denominations,
     uint32[] memory _protocolFees
   ) internal returns (address) {
-    require(_token.isContract(), "Token is not contract"); // TODO should we check that such instance already exist?
-    require(_uniswapPoolSwappingFee > 0, "uniswapPoolSwappingFee is zero"); // TODO should we check > 0 ?
+    require(_token.isContract(), "Token is not contract");
+    require(_uniswapPoolSwappingFee > 0, "uniswapPoolSwappingFee is zero");
     require(_denominations.length > 0, "Empty denominations");
     require(_denominations.length == _protocolFees.length, "Incorrect denominations/fees length");
 
