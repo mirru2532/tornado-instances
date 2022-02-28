@@ -48,7 +48,7 @@ Check config.js for actual values.
 
 With `salt` = `0x0000000000000000000000000000000000000000000000000000000047941987` address must be:
 
-1. `InstanceFactory` - `0x7a6e627DC6F66617b4A74Be097A8f56c622fa24c`
+1. `InstanceFactory` - `0xBb3bd4849F88E709Ea6e5dC8F2C4cDc5293a12d5`
 
 Check addresses with current config:
 

@@ -8,7 +8,6 @@ import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./ERC20TornadoCloneable.sol";
 import "./AddInstanceProposal.sol";
-import "./interfaces/IGovernance.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 
@@ -33,6 +32,14 @@ contract InstanceFactory is Ownable {
   event NewInstanceCloneCreated(address indexed clone);
   event NewGovernanceProposalCreated(address indexed proposal);
 
+  /**
+   * @dev Throws if called by any account other than the Governance.
+   */
+  modifier onlyGovernance() {
+    require(owner() == _msgSender(), "Caller is not the Governance");
+    _;
+  }
+
   constructor(
     address _verifier,
     address _hasher,
@@ -56,7 +63,12 @@ contract InstanceFactory is Ownable {
     transferOwnership(_governance);
   }
 
-  function createInstanceClone(uint256 _denomination, address _token) external onlyOwner returns (address) {
+  /**
+   * @dev Throws if called by any account other than the Governance.
+   * @param _denomination denomination of new Tornado instance
+   * @param _token address of ERC20 token for a new instance
+   */
+  function createInstanceClone(uint256 _denomination, address _token) external onlyGovernance returns (address) {
     bytes32 salt = keccak256(abi.encodePacked(_denomination, _token));
 
     require(!implementation.predictDeterministicAddress(salt).isContract(), "Instance already exists");
@@ -73,6 +85,15 @@ contract InstanceFactory is Ownable {
     return implementation.predictDeterministicAddress(salt);
   }
 
+  /**
+   * @dev Creates AddInstanceProposal with approve.
+   * @param _token address of ERC20 token for a new instance
+   * @param _uniswapPoolSwappingFee fee value of Uniswap instance which will be used for `TORN/token` price determination.
+   * `3000` means 0.3% fee Uniswap pool.
+   * @param _denominations list of denominations for each new instance
+   * @param _protocolFees list of protocol fees for each new instance.
+   * `100` means that instance withdrawal fee is 1% of denomination.
+   */
   function createProposalApprove(
     address _token,
     uint24 _uniswapPoolSwappingFee,
@@ -83,6 +104,15 @@ contract InstanceFactory is Ownable {
     return _createProposal(_token, _uniswapPoolSwappingFee, _denominations, _protocolFees);
   }
 
+  /**
+   * @dev Creates AddInstanceProposal with approve.
+   * @param _token address of ERC20 token for a new instance
+   * @param _uniswapPoolSwappingFee fee value of Uniswap instance which will be used for `TORN/token` price determination.
+   * `3000` means 0.3% fee Uniswap pool.
+   * @param _denominations list of denominations for each new instance
+   * @param _protocolFees list of protocol fees for each new instance.
+   * `100` means that instance withdrawal fee is 1% of denomination.
+   */
   function createProposalPermit(
     address _token,
     uint24 _uniswapPoolSwappingFee,
@@ -118,32 +148,32 @@ contract InstanceFactory is Ownable {
     return proposal;
   }
 
-  function setVerifier(address _verifier) external onlyOwner {
+  function setVerifier(address _verifier) external onlyGovernance {
     verifier = _verifier;
     emit NewVerifierSet(verifier);
   }
 
-  function setHasher(address _hasher) external onlyOwner {
+  function setHasher(address _hasher) external onlyGovernance {
     hasher = _hasher;
     emit NewHasherSet(hasher);
   }
 
-  function setMerkleTreeHeight(uint32 _merkleTreeHeight) external onlyOwner {
+  function setMerkleTreeHeight(uint32 _merkleTreeHeight) external onlyGovernance {
     merkleTreeHeight = _merkleTreeHeight;
     emit NewTreeHeightSet(merkleTreeHeight);
   }
 
-  function setCreationFee(uint256 _creationFee) external onlyOwner {
+  function setCreationFee(uint256 _creationFee) external onlyGovernance {
     creationFee = _creationFee;
     emit NewCreationFeeSet(_creationFee);
   }
 
-  function setImplementation(address _newImplementation) external onlyOwner {
+  function setImplementation(address _newImplementation) external onlyGovernance {
     implementation = _newImplementation;
     emit NewImplementationSet(implementation);
   }
 
-  function generateNewImplementation() external onlyOwner {
+  function generateNewImplementation() external onlyGovernance {
     implementation = address(new ERC20TornadoCloneable(verifier, hasher));
   }
 }
