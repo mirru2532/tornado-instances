@@ -26,8 +26,6 @@ Anyone can create governance proposal for the addition of a new ERC20 instance b
 Setting up the repository:
 
 ```bash
-    git clone https://github.com/mirru2532/tornado-instances.git
-    cd tornado-instances
     yarn
     cp .env.example .env
 ```
