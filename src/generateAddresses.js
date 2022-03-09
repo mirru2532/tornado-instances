@@ -6,6 +6,19 @@ async function generate(config = defaultConfig) {
   const deploymentBytecodeFactory =
     FactoryFactory.bytecode +
     FactoryFactory.interface
+      .encodeDeploy([config.verifier, config.hasher, config.merkleTreeHeight, config.owner])
+      .slice(2)
+
+  const factoryAddress = ethers.utils.getCreate2Address(
+    config.singletonFactory,
+    config.salt,
+    ethers.utils.keccak256(deploymentBytecodeFactory),
+  )
+
+  const FactoryWithRegistryFactory = await ethers.getContractFactory('InstanceFactoryWithRegistry')
+  const deploymentBytecodeFactoryWithRegistry =
+    FactoryWithRegistryFactory.bytecode +
+    FactoryWithRegistryFactory.interface
       .encodeDeploy([
         config.verifier,
         config.hasher,
@@ -17,16 +30,21 @@ async function generate(config = defaultConfig) {
       ])
       .slice(2)
 
-  const factoryAddress = ethers.utils.getCreate2Address(
+  const factoryWithRegistryAddress = ethers.utils.getCreate2Address(
     config.singletonFactory,
     config.salt,
-    ethers.utils.keccak256(deploymentBytecodeFactory),
+    ethers.utils.keccak256(deploymentBytecodeFactoryWithRegistry),
   )
 
   const result = {
     factoryContract: {
       address: factoryAddress,
       bytecode: deploymentBytecodeFactory,
+      isProxy: false,
+    },
+    factoryWithRegistryContract: {
+      address: factoryWithRegistryAddress,
+      bytecode: deploymentBytecodeFactoryWithRegistry,
       isProxy: false,
     },
   }
@@ -37,6 +55,7 @@ async function generate(config = defaultConfig) {
 async function generateWithLog() {
   const contracts = await generate()
   console.log('Instance factory contract: ', contracts.factoryContract.address)
+  console.log('Instance factory with registry contract: ', contracts.factoryWithRegistryContract.address)
   return contracts
 }
 

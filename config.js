@@ -14,4 +14,5 @@ module.exports = {
   compWhale: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
   creationFee: '200000000000000000000', // 200 TORN
   deployGasLimit: 7000000,
+  owner: '0xBAE5aBfa98466Dbe68836763B087f2d189f4D28f',
 }
