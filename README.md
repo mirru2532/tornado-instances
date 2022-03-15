@@ -1,87 +1,90 @@
-# Tornado Instances
-
-[![build](https://img.shields.io/github/workflow/status/mirru2532/tornado-instances/build)](https://github.com/h-ivor/tornado-instances/actions) [![Coveralls](https://img.shields.io/coveralls/github/mirru2532/tornado-instances)](https://coveralls.io/github/mirru2532/tornado-instances)
+# Tornado Instances Factory
 
 ## About
 
-This repository serves as a general template repository for deploying proposals for governance for the addition of new tornado ERC20 instances to the tornado proxy.
+This repository contains:
 
-The contracts offer a template for the addition of 4 new instances for an ERC20 token (the standard way to add new instances) and can also be slightly modified to add a custom amount. The scripts deploy the contracts.
+1. `InstanceFactory` - instance factory for the creation new Tornado ERC20 pools
+2. `InstanceFactoryWithRegistry` - governance proposal factory for the addition of new Tornado ERC20 instances to the Tornado router
 
-The resources folder contains data necessary for the instances to be deployed and must be filled out. They are initially filled out with the RAI instance data.
+### InstanceFactory
 
-### How-To:
+Anyone can create a new ERC20 instance by calling `createInstanceClone` method of the factory with parameters:
+
+1. `address token` - address of ERC20 token for a new instance
+2. `uint256 denomination` - denomination for new instance (tokens can only be deposited in certain denominations into instances)
+
+### InstanceFactoryWithRegistry
+
+Anyone can create governance proposal for the addition of a new ERC20 instance by calling `createProposalApprove/createProposalPermit` method of the factory with parameters (proposal creation fee in TORN is charged from sender):
+
+1. `address token` - address of ERC20 token for a new instance
+2. `uint24 uniswapPoolSwappingFee` - fee value of Uniswap instance which will be used for `TORN/token` price determination. `3000` means 0.3% fee Uniswap pool.
+3. `uint256[] denominations` - list of denominations for each new instance (tokens can only be deposited in certain denominations into instances).
+4. `uint32[] protocolFees` - list of protocol fees for each new instance (this fee is only charged from registrated relayer during withdrawal process). `100` means 1% of instance denomination fee for withdrawal throw registrated relayer.
+
+## Factory parameters
+
+### InstanceFactoryWithRegistry
+
+1. `max number of new instances in one proposal` - the current version supports the addition of a maximum of 4 instances at once.
+2. `proposal creation fee` - this fee is charged from creator of proposal during `createProposalApprove/createProposalPermit` factory method execution. It can be changed by governance. Default value is stored in `config.js`.
+3. `TWAPSlotsMin` - minimum number of TWAP slots for Uniswap pool that is chosen during `createProposalApprove/createProposalPermit` factory method call. It can be changed by governance. Default value is stored in `config.js`.
+
+## Warnings
+
+1. This version of the factory creates a proposal for **immutable** Tornado instance initialization.
+2. For `InstanceFactoryWithRegistry` users should manually propose a proposal after its creation using the factory (in governance UI for example). As `propose()` method caller must have 1000 TORN locked in the governance. Moreover, the proposer can't propose more than one proposal simultaneously.
+
+## Tests
 
 Setting up the repository:
 
 ```bash
-git clone https://github.com/mirru2532/tornado-instances.git
-cd tornado-instances
-yarn
-cp .env.example .env
+    yarn
+    cp .env.example .env
 ```
 
 Please fill out .env according to the template provided in it. Please ensure that all of the example values are set to the correct addresses.
 
-### Testing and running scripts:
-
 To run test scripts:
 
 ```bash
-yarn test
+    yarn test
 ```
 
-Test scripts cover instance factory deployment, proposal deployment and executing proposal (RAI instances).
+Test scripts cover instance factory deployment, proposal deployment and executing proposal.
 
-Running **tasks:**
+## Deploy
 
-```bash
-# a list of yarn scripts specifically for instance deployment
-"deploy:proposal": "yarn hardhat --network mainnet deploy_proposal --factory-address",
-"deploy:proposal:test": "yarn hardhat --network goerli deploy_proposal --factory-address",
-"deploy:proposal:factory": "yarn hardhat --network mainnet deploy_factory_proposal",
-"deploy:proposal:factory:test": "yarn hardhat --network goerli deploy_factory_proposal",
-"propose": "yarn hardhat --network mainnet propose_proposal --proposal-address",
+Check config.js for actual values.
 
-# as an example
-yarn deploy:proposal:factory
+With `salt` = `0x0000000000000000000000000000000000000000000000000000000047941987` address must be:
 
-# to call a specific task
-yarn hardhat --network <network> <task> <args>
+1. `InstanceFactory` - `0x09110e04d5AEF747bcf7A3585D8FFC892Ab9D1Cf`
+2. `InstanceFactoryWithRegistry` - `0xC01D57d83E9Fe35E0Fb900F9D384EFcA679DF4bD`
+
+Check addresses with current config:
+
+```shell
+    yarn compile
+    node -e 'require("./src/generateAddresses").generateWithLog()'
 ```
 
-## Deploying a proposal for an instance update
+Deploy InstanceFactory:
 
-Open `resources/instances.js`, a single object which generates an instance contains the following fields (RAI as an example):
-
-```js
-{
-    tokenAddress: "0x03ab458634910AaD20eF5f1C8ee96F1D6ac54919",
-    denomination: "33333333333333333333",
-    symbol: "RAI",
-    decimals: 18
-}
+```shell
+    yarn hardhat run scripts/deployInstanceFactory.js --network mainnet
 ```
 
-`denomination` - tokens can only be deposited in certain denominations into instances, the above considers this instance to have a 100$ denomination, assuming RAI at 3$.
-Fill out each of these fields for your own token in the `instance.js` file. This repo supports the addition of a maximum of 6 instances at once. It will automatically detect how many instances are to use.
+Deploy InstanceFactoryWithRegistry:
 
-Now find the factory contract address:
-
-```bash
-yarn deploy:proposal <factory address>
+```shell
+    yarn hardhat run scripts/deployInstanceFactoryWithRegistry.js --network mainnet
 ```
 
-If testing:
+Verify InstanceFactory on Etherscan:
 
-```bash
-yarn deploy:proposal:test <factory address>
 ```
-
-The last step, or first depending on if you are simply proposing the proposal, is taking the address of the deployed proposal and calling:
-
-```bash
-yarn propose <proposal address>
+    yarn hardhat verify --network <network-name> <contract-address> <constructor-arguments>
 ```
-
-There is not test implementation for this.

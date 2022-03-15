@@ -1,13 +1,9 @@
 require('dotenv').config()
-require('@nomiclabs/hardhat-ethers')
-require('@nomiclabs/hardhat-etherscan')
 require('@nomiclabs/hardhat-waffle')
+require('@nomiclabs/hardhat-etherscan')
 require('hardhat-log-remover')
 require('solidity-coverage')
 
-require('./tasks/deploy_proposal.js')
-require('./tasks/deploy_factory_proposal.js')
-require('./tasks/propose_proposal.js')
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -15,11 +11,20 @@ module.exports = {
   solidity: {
     compilers: [
       {
+        version: '0.6.2',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
         version: '0.6.12',
         settings: {
           optimizer: {
             enabled: true,
-            runs: 2000,
+            runs: 200,
           },
         },
       },
@@ -28,7 +33,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 2000,
+            runs: 200,
           },
         },
       },
@@ -37,24 +42,26 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: `https://mainnet.infura.io/v3/${process.env.mainnet_rpc_key}`,
-        blockNumber: process.env.use_latest_block == 'true' ? undefined : 13017436,
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+        blockNumber: 14250000,
       },
+      chainId: 1,
+      initialBaseFeePerGas: 5,
       loggingEnabled: false,
+      allowUnlimitedContractSize: false,
+      blockGasLimit: 50000000,
     },
-    localhost: {
-      url: 'http://localhost:8545',
-      timeout: 120000,
+    rinkeby: {
+      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: process.env.PRIVATE_KEY
+        ? [process.env.PRIVATE_KEY]
+        : { mnemonic: 'test test test test test junk' },
     },
     mainnet: {
-      url: `https://mainnet.infura.io/v3/${process.env.mainnet_rpc_key}`,
-      accounts: [`${process.env.mainnet_account_pk}`],
-      timeout: 2147483647,
-    },
-    goerli: {
-      url: `https://goerli.infura.io/v3/${process.env.goerli_rpc_key}`,
-      accounts: [`${process.env.goerli_account_pk}`],
-      timeout: 2147483647,
+      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+      accounts: process.env.PRIVATE_KEY
+        ? [process.env.PRIVATE_KEY]
+        : { mnemonic: 'test test test test test junk' },
     },
   },
   mocha: { timeout: 9999999999 },
@@ -63,6 +70,6 @@ module.exports = {
     runOnCompile: true,
   },
   etherscan: {
-    apiKey: `${process.env.etherscan_api_key}`,
+    apiKey: `${process.env.ETHERSCAN_KEY}`,
   },
 }
