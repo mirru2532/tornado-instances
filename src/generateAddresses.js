@@ -26,6 +26,9 @@ async function generate(config = defaultConfig) {
         config.governance,
         config.instanceRegistry,
         config.TORN,
+        config.UniswapV3Factory,
+        config.WETH,
+        config.TWAPSlotsMin,
         config.creationFee,
       ])
       .slice(2)

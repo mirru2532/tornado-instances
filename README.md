@@ -29,6 +29,7 @@ Anyone can create governance proposal for the addition of a new ERC20 instance b
 
 1. `max number of new instances in one proposal` - the current version supports the addition of a maximum of 4 instances at once.
 2. `proposal creation fee` - this fee is charged from creator of proposal during `createProposalApprove/createProposalPermit` factory method execution. It can be changed by governance. Default value is stored in `config.js`.
+3. `TWAPSlotsMin` - minimum number of TWAP slots for Uniswap pool that is chosen during `createProposalApprove/createProposalPermit` factory method call. It can be changed by governance. Default value is stored in `config.js`.
 
 ## Warnings
 
@@ -60,8 +61,8 @@ Check config.js for actual values.
 
 With `salt` = `0x0000000000000000000000000000000000000000000000000000000047941987` address must be:
 
-1. `InstanceFactory` - `0x9A04e3F1091A69CB53D163abE7ad9bbc86C23823`
-1. `InstanceFactoryWithRegistry` - `0xee994E045B9Ec5a37f3f85d34f9fD087A0c69236`
+1. `InstanceFactory` - `0x09110e04d5AEF747bcf7A3585D8FFC892Ab9D1Cf`
+2. `InstanceFactoryWithRegistry` - `0xC01D57d83E9Fe35E0Fb900F9D384EFcA679DF4bD`
 
 Check addresses with current config:
 

@@ -37,7 +37,7 @@ contract AddInstanceProposal {
     token = _token;
     uniswapPoolSwappingFee = _uniswapPoolSwappingFee;
 
-    require(_denominations.length == _protocolFees.length, "denominations length != protocolFees length");
+    require(_denominations.length == _protocolFees.length, "Incorrect denominations/fees length");
     uint256 _numInstances = _denominations.length;
     require(_numInstances > 0 && _numInstances <= 4, "incorrect instances number");
     numInstances = _numInstances;

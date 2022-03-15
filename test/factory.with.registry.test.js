@@ -101,6 +101,9 @@ describe('Instance Factory With Registry Tests', () => {
     expect(await instanceFactory.implementation()).to.exist
     expect(await instanceFactory.creationFee()).to.be.equal(config.creationFee)
     expect(await instanceFactory.torn()).to.be.equal(config.TORN)
+    expect(await instanceFactory.TWAPSlotsMin()).to.be.equal(config.TWAPSlotsMin)
+    expect(await instanceFactory.WETH()).to.be.equal(config.WETH)
+    expect(await instanceFactory.UniswapV3Factory()).to.be.equal(config.UniswapV3Factory)
   })
 
   it('Governance should be able to set factory params', async function () {
@@ -114,20 +117,24 @@ describe('Instance Factory With Registry Tests', () => {
     await instanceFactory.generateNewImplementation(addressZero, addressZero)
     await instanceFactory.setMerkleTreeHeight(1)
     await instanceFactory.setCreationFee(0)
+    await instanceFactory.setTWAPSlotsMin(0)
 
     expect(await instanceFactory.verifier()).to.be.equal(addressZero)
     expect(await instanceFactory.hasher()).to.be.equal(addressZero)
     expect(await instanceFactory.merkleTreeHeight()).to.be.equal(1)
     expect(await instanceFactory.creationFee()).to.be.equal(0)
+    expect(await instanceFactory.TWAPSlotsMin()).to.be.equal(0)
 
     await instanceFactory.generateNewImplementation(config.verifier, config.hasher)
     await instanceFactory.setMerkleTreeHeight(config.merkleTreeHeight)
     await instanceFactory.setCreationFee(config.creationFee)
+    await instanceFactory.setTWAPSlotsMin(config.TWAPSlotsMin)
 
     expect(await instanceFactory.verifier()).to.be.equal(config.verifier)
     expect(await instanceFactory.hasher()).to.be.equal(config.hasher)
     expect(await instanceFactory.merkleTreeHeight()).to.be.equal(config.merkleTreeHeight)
     expect(await instanceFactory.creationFee()).to.be.equal(config.creationFee)
+    expect(await instanceFactory.TWAPSlotsMin()).to.be.equal(config.TWAPSlotsMin)
   })
 
   it('Should successfully deploy/propose/execute proposal - add instance', async function () {
@@ -465,5 +472,25 @@ describe('Instance Factory With Registry Tests', () => {
       [instance, sender],
       [BigNumber.from(0).sub(value), value],
     )
+  })
+
+  it('Should not deploy proposal with incorrect Uniswap pool', async function () {
+    let { sender, instanceFactory, tornWhale, tornToken } = await loadFixture(fixture)
+
+    // deploy proposal ----------------------------------------------
+    await tornToken.connect(tornWhale).transfer(sender.address, config.creationFee)
+    await tornToken.approve(instanceFactory.address, config.creationFee)
+
+    await expect(
+      instanceFactory
+        .connect(sender)
+        .createProposalApprove(config.COMP, 4000, [ethers.utils.parseEther('100')], [30]),
+    ).to.be.revertedWith('Uniswap pool is not exist')
+
+    await expect(
+      instanceFactory
+        .connect(sender)
+        .createProposalApprove(config.COMP, 10000, [ethers.utils.parseEther('100')], [30]),
+    ).to.be.revertedWith('Uniswap pool TWAP slots number is low')
   })
 })
