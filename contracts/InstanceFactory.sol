@@ -17,10 +17,8 @@ contract InstanceFactory is Ownable {
   address public hasher;
   uint32 public merkleTreeHeight;
 
-  event NewVerifierSet(address indexed newVerifier);
-  event NewHasherSet(address indexed newHasher);
   event NewTreeHeightSet(uint32 indexed newTreeHeight);
-  event NewImplementationSet(address indexed newImplemenentation);
+  event NewImplementationSet(address indexed newImplemenentation, address verifier, address hasher);
   event NewInstanceCloneCreated(address indexed clone);
 
   constructor(
@@ -61,27 +59,15 @@ contract InstanceFactory is Ownable {
     return implementation.predictDeterministicAddress(salt);
   }
 
-  function setVerifier(address _verifier) external onlyOwner {
-    verifier = _verifier;
-    emit NewVerifierSet(verifier);
-  }
-
-  function setHasher(address _hasher) external onlyOwner {
-    hasher = _hasher;
-    emit NewHasherSet(hasher);
-  }
-
   function setMerkleTreeHeight(uint32 _merkleTreeHeight) external onlyOwner {
     merkleTreeHeight = _merkleTreeHeight;
     emit NewTreeHeightSet(merkleTreeHeight);
   }
 
-  function setImplementation(address _newImplementation) external onlyOwner {
-    implementation = _newImplementation;
-    emit NewImplementationSet(implementation);
-  }
-
-  function generateNewImplementation() external onlyOwner {
-    implementation = address(new ERC20TornadoCloneable(verifier, hasher));
+  function generateNewImplementation(address _verifier, address _hasher) external onlyOwner {
+    verifier = _verifier;
+    hasher = _hasher;
+    implementation = address(new ERC20TornadoCloneable(_verifier, _hasher));
+    emit NewImplementationSet(implementation, _verifier, _hasher);
   }
 }

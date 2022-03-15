@@ -16,9 +16,11 @@ contract AddInstanceProposal {
   uint256 internal immutable denomination0;
   uint256 internal immutable denomination1;
   uint256 internal immutable denomination2;
+  uint256 internal immutable denomination3;
   uint32 internal immutable protocolFee0;
   uint32 internal immutable protocolFee1;
   uint32 internal immutable protocolFee2;
+  uint32 internal immutable protocolFee3;
 
   event AddInstanceForRegistry(address instance, address token, uint256 denomination);
 
@@ -35,18 +37,19 @@ contract AddInstanceProposal {
     token = _token;
     uniswapPoolSwappingFee = _uniswapPoolSwappingFee;
 
-    require(_denominations.length == _protocolFees.length);
+    require(_denominations.length == _protocolFees.length, "denominations length != protocolFees length");
     uint256 _numInstances = _denominations.length;
-    require(_numInstances > 0);
-    require(_numInstances < 4);
+    require(_numInstances > 0 && _numInstances <= 4, "incorrect instances number");
     numInstances = _numInstances;
 
     denomination0 = _numInstances > 0 ? _denominations[0] : 0;
     denomination1 = _numInstances > 1 ? _denominations[1] : 0;
     denomination2 = _numInstances > 2 ? _denominations[2] : 0;
+    denomination3 = _numInstances > 3 ? _denominations[3] : 0;
     protocolFee0 = _numInstances > 0 ? _protocolFees[0] : 0;
     protocolFee1 = _numInstances > 1 ? _protocolFees[1] : 0;
     protocolFee2 = _numInstances > 2 ? _protocolFees[2] : 0;
+    protocolFee3 = _numInstances > 3 ? _protocolFees[3] : 0;
   }
 
   function executeProposal() external {
@@ -76,6 +79,8 @@ contract AddInstanceProposal {
       return denomination1;
     } else if (_index == 2) {
       return denomination2;
+    } else if (_index == 3) {
+      return denomination3;
     } else {
       revert("Invalid instance index");
     }
@@ -88,6 +93,8 @@ contract AddInstanceProposal {
       return protocolFee1;
     } else if (_index == 2) {
       return protocolFee2;
+    } else if (_index == 3) {
+      return protocolFee3;
     } else {
       revert("Invalid instance index");
     }

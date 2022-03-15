@@ -70,20 +70,18 @@ describe('Instance Factory Tests', () => {
   it('Governance should be able to set factory params', async function () {
     let { instanceFactory, owner } = await loadFixture(fixture)
 
-    await expect(instanceFactory.setVerifier(addressZero)).to.be.reverted
+    await expect(instanceFactory.setMerkleTreeHeight(1)).to.be.reverted
 
     instanceFactory = await instanceFactory.connect(owner)
 
-    await instanceFactory.setVerifier(addressZero)
-    await instanceFactory.setHasher(addressZero)
+    await instanceFactory.generateNewImplementation(addressZero, addressZero)
     await instanceFactory.setMerkleTreeHeight(1)
 
     expect(await instanceFactory.verifier()).to.be.equal(addressZero)
     expect(await instanceFactory.hasher()).to.be.equal(addressZero)
     expect(await instanceFactory.merkleTreeHeight()).to.be.equal(1)
 
-    await instanceFactory.setVerifier(config.verifier)
-    await instanceFactory.setHasher(config.hasher)
+    await instanceFactory.generateNewImplementation(config.verifier, config.hasher)
     await instanceFactory.setMerkleTreeHeight(config.merkleTreeHeight)
 
     expect(await instanceFactory.verifier()).to.be.equal(config.verifier)

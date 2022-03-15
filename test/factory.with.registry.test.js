@@ -106,13 +106,12 @@ describe('Instance Factory With Registry Tests', () => {
   it('Governance should be able to set factory params', async function () {
     let { instanceFactory, gov } = await loadFixture(fixture)
 
-    await expect(instanceFactory.setVerifier(addressZero)).to.be.reverted
+    await expect(instanceFactory.setMerkleTreeHeight(1)).to.be.reverted
 
     const govSigner = await getSignerFromAddress(gov.address)
     instanceFactory = await instanceFactory.connect(govSigner)
 
-    await instanceFactory.setVerifier(addressZero)
-    await instanceFactory.setHasher(addressZero)
+    await instanceFactory.generateNewImplementation(addressZero, addressZero)
     await instanceFactory.setMerkleTreeHeight(1)
     await instanceFactory.setCreationFee(0)
 
@@ -121,8 +120,7 @@ describe('Instance Factory With Registry Tests', () => {
     expect(await instanceFactory.merkleTreeHeight()).to.be.equal(1)
     expect(await instanceFactory.creationFee()).to.be.equal(0)
 
-    await instanceFactory.setVerifier(config.verifier)
-    await instanceFactory.setHasher(config.hasher)
+    await instanceFactory.generateNewImplementation(config.verifier, config.hasher)
     await instanceFactory.setMerkleTreeHeight(config.merkleTreeHeight)
     await instanceFactory.setCreationFee(config.creationFee)
 
@@ -221,19 +219,22 @@ describe('Instance Factory With Registry Tests', () => {
   it('Should successfully deploy/propose/execute proposal - add instances', async function () {
     let { sender, instanceFactory, gov, instanceRegistry, tornWhale, tornToken } = await loadFixture(fixture)
 
+    const denominations = [
+      ethers.utils.parseEther('1'),
+      ethers.utils.parseEther('10'),
+      ethers.utils.parseEther('100'),
+      ethers.utils.parseEther('1000'),
+    ]
+    const numInstances = denominations.length
+
+    const protocolFees = [30, 30, 30, 30]
+
     // deploy proposal ----------------------------------------------
     await tornToken.connect(tornWhale).transfer(sender.address, config.creationFee)
     await tornToken.approve(instanceFactory.address, config.creationFee)
 
     await expect(() =>
-      instanceFactory
-        .connect(sender)
-        .createProposalApprove(
-          config.COMP,
-          3000,
-          [ethers.utils.parseEther('100'), ethers.utils.parseEther('1000')],
-          [30, 30],
-        ),
+      instanceFactory.connect(sender).createProposalApprove(config.COMP, 3000, denominations, protocolFees),
     ).to.changeTokenBalances(
       tornToken,
       [sender, gov],
@@ -250,11 +251,11 @@ describe('Instance Factory With Registry Tests', () => {
     expect(await proposal.instanceRegistry()).to.be.equal(instanceRegistry.address)
     expect(await proposal.token()).to.be.equal(config.COMP)
     expect(await proposal.uniswapPoolSwappingFee()).to.be.equal(3000)
-    expect(await proposal.numInstances()).to.be.equal(2)
-    expect(await proposal.protocolFeeByIndex(0)).to.be.equal(30)
-    expect(await proposal.protocolFeeByIndex(1)).to.be.equal(30)
-    expect(await proposal.denominationByIndex(0)).to.be.equal(ethers.utils.parseEther('100'))
-    expect(await proposal.denominationByIndex(1)).to.be.equal(ethers.utils.parseEther('1000'))
+    expect(await proposal.numInstances()).to.be.equal(numInstances)
+    for (let i = 0; i < numInstances; i++) {
+      expect(await proposal.protocolFeeByIndex(i)).to.be.equal(protocolFees[i])
+      expect(await proposal.denominationByIndex(i)).to.be.equal(denominations[i])
+    }
 
     // propose proposal ---------------------------------------------
     let response, id, state
@@ -294,37 +295,23 @@ describe('Instance Factory With Registry Tests', () => {
 
     // check instances initialization -------------------------------
     logs = await instanceFactory.queryFilter('NewInstanceCloneCreated')
-    let instanceAddr = '0x' + logs[logs.length - 2].topics[1].slice(-40)
-    let instance = await ethers.getContractAt('ERC20TornadoCloneable', instanceAddr)
+    for (let i = 0; i < numInstances; i++) {
+      let instanceAddr = '0x' + logs[logs.length - numInstances + i].topics[1].slice(-40)
+      let instance = await ethers.getContractAt('ERC20TornadoCloneable', instanceAddr)
 
-    expect(await instance.token()).to.be.equal(config.COMP)
-    expect(await instance.verifier()).to.be.equal(config.verifier)
-    expect(await instance.hasher()).to.be.equal(config.hasher)
-    expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
-    expect(await instance.denomination()).to.equal(ethers.utils.parseEther('100'))
+      expect(await instance.token()).to.be.equal(config.COMP)
+      expect(await instance.verifier()).to.be.equal(config.verifier)
+      expect(await instance.hasher()).to.be.equal(config.hasher)
+      expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
+      expect(await instance.denomination()).to.equal(denominations[i])
 
-    let instanceData = await instanceRegistry.instances(instance.address)
-    expect(instanceData.isERC20).to.be.equal(true)
-    expect(instanceData.token).to.be.equal(config.COMP)
-    expect(instanceData.state).to.be.equal(1)
-    expect(instanceData.uniswapPoolSwappingFee).to.be.equal(3000)
-    expect(instanceData.protocolFeePercentage).to.be.equal(30)
-
-    instanceAddr = '0x' + logs[logs.length - 1].topics[1].slice(-40)
-    instance = await ethers.getContractAt('ERC20TornadoCloneable', instanceAddr)
-
-    expect(await instance.token()).to.be.equal(config.COMP)
-    expect(await instance.verifier()).to.be.equal(config.verifier)
-    expect(await instance.hasher()).to.be.equal(config.hasher)
-    expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
-    expect(await instance.denomination()).to.equal(ethers.utils.parseEther('1000'))
-
-    instanceData = await instanceRegistry.instances(instance.address)
-    expect(instanceData.isERC20).to.be.equal(true)
-    expect(instanceData.token).to.be.equal(config.COMP)
-    expect(instanceData.state).to.be.equal(1)
-    expect(instanceData.uniswapPoolSwappingFee).to.be.equal(3000)
-    expect(instanceData.protocolFeePercentage).to.be.equal(30)
+      let instanceData = await instanceRegistry.instances(instance.address)
+      expect(instanceData.isERC20).to.be.equal(true)
+      expect(instanceData.token).to.be.equal(config.COMP)
+      expect(instanceData.state).to.be.equal(1)
+      expect(instanceData.uniswapPoolSwappingFee).to.be.equal(3000)
+      expect(instanceData.protocolFeePercentage).to.be.equal(protocolFees[i])
+    }
   })
 
   it('Should successfully deploy proposal with permit', async function () {

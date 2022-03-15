@@ -27,7 +27,7 @@ Anyone can create governance proposal for the addition of a new ERC20 instance b
 
 ### InstanceFactoryWithRegistry
 
-1. `max number of new instances in one proposal` - the current version supports the addition of a maximum of 3 instances at once.
+1. `max number of new instances in one proposal` - the current version supports the addition of a maximum of 4 instances at once.
 2. `proposal creation fee` - this fee is charged from creator of proposal during `createProposalApprove/createProposalPermit` factory method execution. It can be changed by governance. Default value is stored in `config.js`.
 
 ## Warnings
