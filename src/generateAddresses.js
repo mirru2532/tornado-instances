@@ -2,7 +2,7 @@ const { ethers } = require('hardhat')
 const defaultConfig = require('../config')
 
 async function generate(config = defaultConfig) {
-  const FactoryFactory = await ethers.getContractFactory('InstanceFactory')
+  const FactoryFactory = await ethers.getContractFactory('MultipleInstanceFactory')
   const deploymentBytecodeFactory =
     FactoryFactory.bytecode +
     FactoryFactory.interface
@@ -57,7 +57,7 @@ async function generate(config = defaultConfig) {
 
 async function generateWithLog() {
   const contracts = await generate()
-  console.log('Instance factory contract: ', contracts.factoryContract.address)
+  console.log('MultipleInstanceFactory contract: ', contracts.factoryContract.address)
   console.log('Instance factory with registry contract: ', contracts.factoryWithRegistryContract.address)
   return contracts
 }

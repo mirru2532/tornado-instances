@@ -8,7 +8,7 @@ const { getSignerFromAddress } = require('./utils')
 const { generate } = require('../src/generateAddresses')
 const { rbigint, createDeposit, toHex, generateProof, initialize } = require('tornado-cli')
 
-describe('Instance Factory Tests', () => {
+describe('Multiple Instance Factory Tests', () => {
   const addressZero = ethers.constants.AddressZero
 
   async function fixture() {
@@ -39,7 +39,10 @@ describe('Instance Factory Tests', () => {
         gasLimit: config.deployGasLimit,
       })
     }
-    const instanceFactory = await ethers.getContractAt('InstanceFactory', contracts.factoryContract.address)
+    const instanceFactory = await ethers.getContractAt(
+      'MultipleInstanceFactory',
+      contracts.factoryContract.address,
+    )
 
     return {
       sender,
@@ -107,6 +110,34 @@ describe('Instance Factory Tests', () => {
     expect(await instance.hasher()).to.be.equal(config.hasher)
     expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
     expect(await instance.denomination()).to.equal(ethers.utils.parseEther('1000'))
+  })
+
+  it('Should successfully add instances', async function () {
+    let { sender, instanceFactory } = await loadFixture(fixture)
+
+    const denominations = [
+      ethers.utils.parseEther('1'),
+      ethers.utils.parseEther('10'),
+      ethers.utils.parseEther('100'),
+      ethers.utils.parseEther('1000'),
+    ]
+    const numInstances = denominations.length
+
+    // deploy instances
+    await instanceFactory.connect(sender).createInstanceClones(config.COMP, denominations)
+
+    // check instance initialization
+    let logs = await instanceFactory.queryFilter('NewInstanceCloneCreated')
+    for (let i = 0; i < numInstances; i++) {
+      let instanceAddr = '0x' + logs[logs.length - numInstances + i].topics[1].slice(-40)
+      let instance = await ethers.getContractAt('ERC20TornadoCloneable', instanceAddr)
+
+      expect(await instance.token()).to.be.equal(config.COMP)
+      expect(await instance.verifier()).to.be.equal(config.verifier)
+      expect(await instance.hasher()).to.be.equal(config.hasher)
+      expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
+      expect(await instance.denomination()).to.equal(denominations[i])
+    }
   })
 
   it('Should deposit and withdraw into the new instance', async function () {

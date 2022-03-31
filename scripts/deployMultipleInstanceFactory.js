@@ -15,7 +15,9 @@ async function main() {
   const singletonFactory = await ethers.getContractAt('SingletonFactory', config.singletonFactory)
   const contracts = await generate()
   await deploy({ ...contracts.factoryContract, singletonFactory })
-  console.log(`Instance factory contract have been deployed on ${contracts.factoryContract.address} address`)
+  console.log(
+    `MultipleInstanceFactory contract have been deployed on ${contracts.factoryContract.address} address`,
+  )
 }
 
 main()

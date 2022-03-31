@@ -61,8 +61,8 @@ Check config.js for actual values.
 
 With `salt` = `0x0000000000000000000000000000000000000000000000000000000047941987` address must be:
 
-1. `InstanceFactory` - `0x09110e04d5AEF747bcf7A3585D8FFC892Ab9D1Cf`
-2. `InstanceFactoryWithRegistry` - `0xC01D57d83E9Fe35E0Fb900F9D384EFcA679DF4bD`
+1. `MultipleInstanceFactory` - `0xdacb0a030Bcfc7163922d34092a822cC19D12d40`
+2. `InstanceFactoryWithRegistry` - `0x6C1F437dFd70501Ad7f152897051446cc51F1eB6`
 
 Check addresses with current config:
 
@@ -74,7 +74,7 @@ Check addresses with current config:
 Deploy InstanceFactory:
 
 ```shell
-    yarn hardhat run scripts/deployInstanceFactory.js --network mainnet
+    yarn hardhat run scripts/deployMultipleInstanceFactory.js --network mainnet
 ```
 
 Deploy InstanceFactoryWithRegistry:

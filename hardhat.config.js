@@ -57,6 +57,12 @@ module.exports = {
         ? [process.env.PRIVATE_KEY]
         : { mnemonic: 'test test test test test junk' },
     },
+    goerli: {
+      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: process.env.PRIVATE_KEY
+        ? [process.env.PRIVATE_KEY]
+        : { mnemonic: 'test test test test test junk' },
+    },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       accounts: process.env.PRIVATE_KEY

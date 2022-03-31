@@ -56,7 +56,7 @@ contract InstanceFactoryWithRegistry is InstanceFactory {
   }
 
   /**
-   * @dev Throws if called by any account other than the Governance.
+   * @dev Creates new Tornado instances. Throws if called by any account other than the Governance.
    * @param _denomination denomination of new Tornado instance
    * @param _token address of ERC20 token for a new instance
    */
