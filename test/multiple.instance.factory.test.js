@@ -110,6 +110,13 @@ describe('Multiple Instance Factory Tests', () => {
     expect(await instance.hasher()).to.be.equal(config.hasher)
     expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
     expect(await instance.denomination()).to.equal(ethers.utils.parseEther('1000'))
+
+    // try to deploy the same instance again
+    await instanceFactory.connect(sender).createInstanceClone(ethers.utils.parseEther('1000'), config.COMP)
+
+    // check that instance has not been created - no new NewInstanceCloneCreated event
+    let curLogs = await instanceFactory.queryFilter('NewInstanceCloneCreated')
+    expect(curLogs.length).to.be.equal(logs.length)
   })
 
   it('Should successfully add instances', async function () {
