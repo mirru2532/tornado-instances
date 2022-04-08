@@ -71,7 +71,7 @@ Check addresses with current config:
     node -e 'require("./src/generateAddresses").generateWithLog()'
 ```
 
-Deploy InstanceFactory:
+Deploy MultipleInstanceFactory:
 
 ```shell
     yarn hardhat run scripts/deployMultipleInstanceFactory.js --network mainnet
