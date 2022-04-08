@@ -69,12 +69,16 @@ module.exports = {
         ? [process.env.PRIVATE_KEY]
         : { mnemonic: 'test test test test test junk' },
     },
-    forknet: {
-      url: process.env.FORKNET_RPC_URL,
-      accounts: process.env.PRIVATE_KEY
-        ? [process.env.PRIVATE_KEY]
-        : { mnemonic: 'test test test test test junk' },
-    },
+    ...(typeof process.env.FORKNET_RPC_URL === 'string'
+      ? {
+          forknet: {
+            url: process.env.FORKNET_RPC_URL,
+            accounts: process.env.PRIVATE_KEY
+              ? [process.env.PRIVATE_KEY]
+              : { mnemonic: 'test test test test test junk' },
+          },
+        }
+      : {}),
   },
   mocha: { timeout: 9999999999 },
   spdxLicenseIdentifier: {
