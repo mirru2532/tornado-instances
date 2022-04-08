@@ -45,12 +45,12 @@ contract InstanceFactory is Ownable {
   function createInstanceClone(uint256 _denomination, address _token) public virtual returns (address) {
     bytes32 salt = keccak256(abi.encodePacked(_denomination, _token));
 
-    require(!implementation.predictDeterministicAddress(salt).isContract(), "Instance already exists");
-
-    address newClone = implementation.cloneDeterministic(salt);
-
-    emit NewInstanceCloneCreated(newClone);
-    ERC20TornadoCloneable(newClone).init(_denomination, merkleTreeHeight, _token);
+    address newClone = implementation.predictDeterministicAddress(salt);
+    if (!newClone.isContract()) {
+      implementation.cloneDeterministic(salt);
+      emit NewInstanceCloneCreated(newClone);
+      ERC20TornadoCloneable(newClone).init(_denomination, merkleTreeHeight, _token);
+    }
     return newClone;
   }
 
