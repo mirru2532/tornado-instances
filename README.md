@@ -62,7 +62,7 @@ Check config.js for actual values.
 With `salt` = `0x0000000000000000000000000000000000000000000000000000000047941987` address must be:
 
 1. `MultipleInstanceFactory` - `0x49Be4c1dF49268066f97eD15fe4b4B90cc68d1A6`
-2. `InstanceFactoryWithRegistry` - `0x19231EBeD3F2228e7894F4cc20161e39e031F07C`
+2. `InstanceFactoryWithRegistry` - `0x7D4a76AF4b2d765D1D62Ac87Cc2aea0b7ECF6102`
 
 Check addresses with current config:
 

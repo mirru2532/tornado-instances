@@ -493,4 +493,18 @@ describe('Instance Factory With Registry Tests', () => {
         .createProposalApprove(config.COMP, 10000, [ethers.utils.parseEther('100')], [30]),
     ).to.be.revertedWith('Uniswap pool TWAP slots number is low')
   })
+
+  it('Should not deploy proposal with incorrect protocol fee', async function () {
+    let { sender, instanceFactory, tornWhale, tornToken } = await loadFixture(fixture)
+
+    // deploy proposal ----------------------------------------------
+    await tornToken.connect(tornWhale).transfer(sender.address, config.creationFee)
+    await tornToken.approve(instanceFactory.address, config.creationFee)
+
+    await expect(
+      instanceFactory
+        .connect(sender)
+        .createProposalApprove(config.COMP, 3000, [ethers.utils.parseEther('100')], [10300]),
+    ).to.be.revertedWith('Protocol fee is more than 100%')
+  })
 })

@@ -121,6 +121,7 @@ contract InstanceFactoryWithRegistry is InstanceFactory {
     // check Uniswap Pool
     for (uint8 i = 0; i < _protocolFees.length; i++) {
       if (_protocolFees[i] > 0) {
+        require(_protocolFees[i] <= 10000, "Protocol fee is more than 100%");
         // pool exists
         address poolAddr = UniswapV3Factory.getPool(_token, WETH, _uniswapPoolSwappingFee);
         require(poolAddr != address(0), "Uniswap pool is not exist");
