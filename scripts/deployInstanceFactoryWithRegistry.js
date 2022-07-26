@@ -14,9 +14,13 @@ async function deploy({ address, bytecode, singletonFactory }) {
 async function main() {
   const singletonFactory = await ethers.getContractAt('SingletonFactory', config.singletonFactory)
   const contracts = await generate()
-  await deploy({ ...contracts.factoryWithRegistryContract, singletonFactory })
+  await deploy({ ...contracts.factoryWithRegistryContract.implementation, singletonFactory })
+  await deploy({ ...contracts.factoryWithRegistryContract.proxy, singletonFactory })
   console.log(
-    `Instance factory with registry contract have been deployed on ${contracts.factoryWithRegistryContract.address} address`,
+    `Instance factory with registry contract have been deployed on ${contracts.factoryWithRegistryContract.implementation.address} address`,
+  )
+  console.log(
+    `Instance factory with registry proxy contract have been deployed on ${contracts.factoryWithRegistryContract.proxy.address} address`,
   )
 }
 

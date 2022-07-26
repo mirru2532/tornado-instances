@@ -14,10 +14,10 @@ describe('Multiple Instance Factory Tests', () => {
   async function fixture() {
     const [sender, deployer] = await ethers.getSigners()
 
-    const owner = await getSignerFromAddress(config.owner)
+    const owner = await getSignerFromAddress(config.admin)
 
     await sender.sendTransaction({
-      to: config.owner,
+      to: config.admin,
       value: ethers.utils.parseEther('1'),
     })
 
@@ -34,14 +34,19 @@ describe('Multiple Instance Factory Tests', () => {
       config.singletonFactoryVerboseWrapper,
     )
     const contracts = await generate()
-    if ((await ethers.provider.getCode(contracts.factoryContract.address)) == '0x') {
-      await singletonFactory.deploy(contracts.factoryContract.bytecode, config.salt, {
+    if ((await ethers.provider.getCode(contracts.factoryContract.implementation.address)) == '0x') {
+      await singletonFactory.deploy(contracts.factoryContract.implementation.bytecode, config.salt, {
+        gasLimit: config.deployGasLimit,
+      })
+    }
+    if ((await ethers.provider.getCode(contracts.factoryContract.proxy.address)) == '0x') {
+      await singletonFactory.deploy(contracts.factoryContract.proxy.bytecode, config.salt, {
         gasLimit: config.deployGasLimit,
       })
     }
     const instanceFactory = await ethers.getContractAt(
       'MultipleInstanceFactory',
-      contracts.factoryContract.address,
+      contracts.factoryContract.proxy.address,
     )
 
     return {

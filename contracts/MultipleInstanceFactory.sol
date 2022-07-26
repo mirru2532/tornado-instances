@@ -5,13 +5,6 @@ pragma solidity 0.7.6;
 import "./InstanceFactory.sol";
 
 contract MultipleInstanceFactory is InstanceFactory {
-  constructor(
-    address _verifier,
-    address _hasher,
-    uint32 _merkleTreeHeight,
-    address _owner
-  ) InstanceFactory(_verifier, _hasher, _merkleTreeHeight, _owner) {}
-
   /**
    * @dev Creates new Tornado instances.
    * @param _token address of ERC20 token for a new instance

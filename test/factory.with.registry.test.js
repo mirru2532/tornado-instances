@@ -57,14 +57,25 @@ describe('Instance Factory With Registry Tests', () => {
       config.singletonFactoryVerboseWrapper,
     )
     const contracts = await generate()
-    if ((await ethers.provider.getCode(contracts.factoryWithRegistryContract.address)) == '0x') {
-      await singletonFactory.deploy(contracts.factoryWithRegistryContract.bytecode, config.salt, {
+    if (
+      (await ethers.provider.getCode(contracts.factoryWithRegistryContract.implementation.address)) == '0x'
+    ) {
+      await singletonFactory.deploy(
+        contracts.factoryWithRegistryContract.implementation.bytecode,
+        config.salt,
+        {
+          gasLimit: config.deployGasLimit,
+        },
+      )
+    }
+    if ((await ethers.provider.getCode(contracts.factoryWithRegistryContract.proxy.address)) == '0x') {
+      await singletonFactory.deploy(contracts.factoryWithRegistryContract.proxy.bytecode, config.salt, {
         gasLimit: config.deployGasLimit,
       })
     }
     const instanceFactory = await ethers.getContractAt(
       'InstanceFactoryWithRegistry',
-      contracts.factoryWithRegistryContract.address,
+      contracts.factoryWithRegistryContract.proxy.address,
     )
 
     return {

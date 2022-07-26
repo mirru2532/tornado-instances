@@ -30,27 +30,38 @@ contract InstanceFactoryWithRegistry is InstanceFactory {
    * @dev Throws if called by any account other than the Governance.
    */
   modifier onlyGovernance() {
-    require(owner() == _msgSender(), "Caller is not the Governance");
+    require(governance == msg.sender, "IF: caller is not the Governance");
     _;
   }
 
   constructor(
-    address _verifier,
-    address _hasher,
-    uint32 _merkleTreeHeight,
     address _governance,
     address _instanceRegistry,
     address _torn,
     address _UniswapV3Factory,
-    address _WETH,
-    uint16 _TWAPSlotsMin,
-    uint256 _creationFee
-  ) InstanceFactory(_verifier, _hasher, _merkleTreeHeight, _governance) {
+    address _WETH
+  ) {
     governance = _governance;
     instanceRegistry = _instanceRegistry;
     torn = _torn;
     UniswapV3Factory = IUniswapV3Factory(_UniswapV3Factory);
     WETH = _WETH;
+  }
+
+  /**
+   * @notice initialize function for upgradeability
+   * @dev this contract will be deployed behind a proxy and should not assign values at logic address,
+   *      params left out because self explainable
+   * */
+  function initialize(
+    address _verifier,
+    address _hasher,
+    uint32 _merkleTreeHeight,
+    address _governance,
+    uint16 _TWAPSlotsMin,
+    uint256 _creationFee
+  ) external initializer {
+    initialize(_verifier, _hasher, _merkleTreeHeight, _governance);
     TWAPSlotsMin = _TWAPSlotsMin;
     creationFee = _creationFee;
   }
@@ -140,12 +151,12 @@ contract InstanceFactoryWithRegistry is InstanceFactory {
     return proposal;
   }
 
-  function setCreationFee(uint256 _creationFee) external onlyGovernance {
+  function setCreationFee(uint256 _creationFee) external onlyAdmin {
     creationFee = _creationFee;
     emit NewCreationFeeSet(_creationFee);
   }
 
-  function setTWAPSlotsMin(uint16 _TWAPSlotsMin) external onlyGovernance {
+  function setTWAPSlotsMin(uint16 _TWAPSlotsMin) external onlyAdmin {
     TWAPSlotsMin = _TWAPSlotsMin;
     emit NewTWAPSlotsMinSet(_TWAPSlotsMin);
   }
