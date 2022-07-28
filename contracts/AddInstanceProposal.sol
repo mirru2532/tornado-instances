@@ -4,10 +4,10 @@ pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "./interfaces/IInstanceRegistry.sol";
-import "./InstanceFactory.sol";
+import "./interfaces/IInstanceFactory.sol";
 
 contract AddInstanceProposal {
-  InstanceFactory public immutable instanceFactory;
+  IInstanceFactory public immutable instanceFactory;
   IInstanceRegistry public immutable instanceRegistry;
   address public immutable token;
   uint24 public immutable uniswapPoolSwappingFee;
@@ -32,7 +32,7 @@ contract AddInstanceProposal {
     uint256[] memory _denominations,
     uint32[] memory _protocolFees
   ) {
-    instanceFactory = InstanceFactory(_instanceFactory);
+    instanceFactory = IInstanceFactory(_instanceFactory);
     instanceRegistry = IInstanceRegistry(_instanceRegistry);
     token = _token;
     uniswapPoolSwappingFee = _uniswapPoolSwappingFee;
@@ -57,7 +57,7 @@ contract AddInstanceProposal {
       address instance = instanceFactory.createInstanceClone(denominationByIndex(i), token);
 
       IInstanceRegistry.Instance memory newInstanceData = IInstanceRegistry.Instance(
-        true,
+        token != address(0),
         IERC20(token),
         IInstanceRegistry.InstanceState.ENABLED,
         uniswapPoolSwappingFee,

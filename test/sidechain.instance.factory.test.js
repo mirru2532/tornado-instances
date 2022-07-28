@@ -8,7 +8,7 @@ const { getSignerFromAddress } = require('./utils')
 const { generate } = require('../src/generateAddresses')
 const { rbigint, createDeposit, toHex, generateProof, initialize } = require('tornado-cli')
 
-describe('Multiple Instance Factory Tests', () => {
+describe('Sidechain Instance Factory Tests', () => {
   const addressZero = ethers.constants.AddressZero
 
   async function fixture() {
@@ -34,19 +34,19 @@ describe('Multiple Instance Factory Tests', () => {
       config.singletonFactoryVerboseWrapper,
     )
     const contracts = await generate()
-    if ((await ethers.provider.getCode(contracts.factoryContract.implementation.address)) == '0x') {
-      await singletonFactory.deploy(contracts.factoryContract.implementation.bytecode, config.salt, {
+    if ((await ethers.provider.getCode(contracts.sidechainFactory.implementation.address)) == '0x') {
+      await singletonFactory.deploy(contracts.sidechainFactory.implementation.bytecode, config.salt, {
         gasLimit: config.deployGasLimit,
       })
     }
-    if ((await ethers.provider.getCode(contracts.factoryContract.proxy.address)) == '0x') {
-      await singletonFactory.deploy(contracts.factoryContract.proxy.bytecode, config.salt, {
+    if ((await ethers.provider.getCode(contracts.sidechainFactory.proxy.address)) == '0x') {
+      await singletonFactory.deploy(contracts.sidechainFactory.proxy.bytecode, config.salt, {
         gasLimit: config.deployGasLimit,
       })
     }
     const instanceFactory = await ethers.getContractAt(
-      'MultipleInstanceFactory',
-      contracts.factoryContract.proxy.address,
+      'SidechainInstanceFactory',
+      contracts.sidechainFactory.proxy.address,
     )
 
     return {
@@ -72,10 +72,11 @@ describe('Multiple Instance Factory Tests', () => {
     expect(await instanceFactory.verifier()).to.be.equal(config.verifier)
     expect(await instanceFactory.hasher()).to.be.equal(config.hasher)
     expect(await instanceFactory.merkleTreeHeight()).to.be.equal(config.merkleTreeHeight)
-    expect(await instanceFactory.implementation()).to.exist
+    expect(await instanceFactory.ERC20Impl()).to.exist
+    expect(await instanceFactory.nativeCurImpl()).to.exist
   })
 
-  it('Governance should be able to set factory params', async function () {
+  it('Admin should be able to set factory params', async function () {
     let { instanceFactory, owner } = await loadFixture(fixture)
 
     await expect(instanceFactory.setMerkleTreeHeight(1)).to.be.reverted
@@ -194,6 +195,102 @@ describe('Multiple Instance Factory Tests', () => {
       compToken,
       [instance, sender],
       [BigNumber.from(0).sub(value), value],
+    )
+  })
+
+  it('Should successfully add native currency instance', async function () {
+    let { sender, instanceFactory } = await loadFixture(fixture)
+
+    const denomination = ethers.utils.parseEther('1')
+
+    // deploy instance
+    await instanceFactory.connect(sender).createInstanceClone(denomination, addressZero)
+
+    // check instance initialization
+    let logs = await instanceFactory.queryFilter('NewInstanceCloneCreated')
+    const instance = await ethers.getContractAt(
+      'ETHTornadoCloneable',
+      ethers.utils.getAddress('0x' + logs[logs.length - 1].topics[1].slice(-40)),
+    )
+
+    expect(await instance.verifier()).to.be.equal(config.verifier)
+    expect(await instance.hasher()).to.be.equal(config.hasher)
+    expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
+    expect(await instance.denomination()).to.equal(denomination)
+
+    // try to deploy the same instance again
+    await instanceFactory.connect(sender).createInstanceClone(denomination, addressZero)
+
+    // check that instance has not been created - no new NewInstanceCloneCreated event
+    let curLogs = await instanceFactory.queryFilter('NewInstanceCloneCreated')
+    expect(curLogs.length).to.be.equal(logs.length)
+  })
+
+  it('Should successfully add native currency instances', async function () {
+    let { sender, instanceFactory } = await loadFixture(fixture)
+
+    const denominations = [
+      ethers.utils.parseEther('1'),
+      ethers.utils.parseEther('10'),
+      ethers.utils.parseEther('100'),
+      ethers.utils.parseEther('1000'),
+    ]
+    const numInstances = denominations.length
+
+    // deploy instances
+    await instanceFactory.connect(sender).createInstanceClones(addressZero, denominations)
+
+    // check instance initialization
+    let logs = await instanceFactory.queryFilter('NewInstanceCloneCreated')
+    for (let i = 0; i < numInstances; i++) {
+      let instanceAddr = '0x' + logs[logs.length - numInstances + i].topics[1].slice(-40)
+      let instance = await ethers.getContractAt('ETHTornadoCloneable', instanceAddr)
+
+      expect(await instance.verifier()).to.be.equal(config.verifier)
+      expect(await instance.hasher()).to.be.equal(config.hasher)
+      expect(await instance.levels()).to.be.equal(config.merkleTreeHeight)
+      expect(await instance.denomination()).to.equal(denominations[i])
+    }
+  })
+
+  it('Should deposit and withdraw into the new native currency instance', async function () {
+    let { sender, instanceFactory } = await loadFixture(fixture)
+
+    const denomination = ethers.utils.parseEther('1.5')
+
+    // deploy instance
+    await instanceFactory.connect(sender).createInstanceClone(denomination, addressZero)
+
+    let logs = await instanceFactory.queryFilter('NewInstanceCloneCreated')
+    const instance = await ethers.getContractAt(
+      'ETHTornadoCloneable',
+      ethers.utils.getAddress('0x' + logs[logs.length - 1].topics[1].slice(-40)),
+    )
+
+    // check instance work ------------------------------------------
+    const depo = createDeposit({
+      nullifier: rbigint(31),
+      secret: rbigint(31),
+    })
+
+    await expect(() =>
+      instance.connect(sender).deposit(toHex(depo.commitment), {
+        value: denomination,
+      }),
+    ).to.changeEtherBalances([sender, instance], [BigNumber.from(0).sub(denomination), denomination])
+
+    let pevents = await instance.queryFilter('Deposit')
+    await initialize({ merkleTreeHeight: 20 })
+
+    const { proof, args } = await generateProof({
+      deposit: depo,
+      recipient: sender.address,
+      events: pevents,
+    })
+
+    await expect(() => instance.withdraw(proof, ...args)).to.changeEtherBalances(
+      [instance, sender],
+      [BigNumber.from(0).sub(denomination), denomination],
     )
   })
 })

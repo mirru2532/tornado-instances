@@ -36,52 +36,62 @@ async function upgradableContract({ contractName, implConstructorArgs, proxyCons
 }
 
 async function generate(config = defaultConfig) {
-  // factory contract -----------------------------------------------
-  const FactoryFactory = await ethers.getContractFactory('MultipleInstanceFactory')
-  const FactoryInitData = FactoryFactory.interface.encodeFunctionData('initialize', [
+  // sidechain factory contract -------------------------------------
+  const SidechainFactory = await ethers.getContractFactory('SidechainInstanceFactory')
+  const SidechainFactoryInitData = SidechainFactory.interface.encodeFunctionData('initialize', [
     config.verifier,
     config.hasher,
     config.merkleTreeHeight,
     config.admin,
   ])
 
-  const factoryContract = await upgradableContract({
-    contractName: 'MultipleInstanceFactory',
+  const sidechainFactory = await upgradableContract({
+    contractName: 'SidechainInstanceFactory',
     implConstructorArgs: [],
-    proxyConstructorArgs: [config.admin, FactoryInitData],
+    proxyConstructorArgs: [config.admin, SidechainFactoryInitData],
     salt: config.salt,
   })
 
   // factory with registry contract ---------------------------------
-  const FactoryWithRegistryFactory = await ethers.getContractFactory('InstanceFactoryWithRegistry')
-  const FactoryWithRegistryInitData = FactoryWithRegistryFactory.interface.encodeFunctionData(
-    'initialize(address,address,uint32,address,uint16,uint256)',
-    [
-      config.verifier,
-      config.hasher,
-      config.merkleTreeHeight,
-      config.governance,
-      config.TWAPSlotsMin,
-      config.creationFee,
-    ],
-  )
+  const Factory = await ethers.getContractFactory('InstanceFactory')
+  const FactoryInitData = Factory.interface.encodeFunctionData('initialize', [
+    config.verifier,
+    config.hasher,
+    config.merkleTreeHeight,
+    config.governance,
+  ])
 
-  const factoryWithRegistryContract = await upgradableContract({
-    contractName: 'InstanceFactoryWithRegistry',
+  const factory = await upgradableContract({
+    contractName: 'InstanceFactory',
+    implConstructorArgs: [],
+    proxyConstructorArgs: [config.governance, FactoryInitData],
+    salt: config.salt,
+  })
+
+  const ProposalCreator = await ethers.getContractFactory('InstanceProposalCreator')
+  const ProposalCreatorInitData = ProposalCreator.interface.encodeFunctionData('initialize', [
+    config.TWAPSlotsMin,
+    config.creationFee,
+  ])
+
+  const proposalCreator = await upgradableContract({
+    contractName: 'InstanceProposalCreator',
     implConstructorArgs: [
       config.governance,
+      factory.proxy.address,
       config.instanceRegistry,
       config.TORN,
       config.UniswapV3Factory,
       config.WETH,
     ],
-    proxyConstructorArgs: [config.governance, FactoryWithRegistryInitData],
+    proxyConstructorArgs: [config.governance, ProposalCreatorInitData],
     salt: config.salt,
   })
 
   const result = {
-    factoryContract,
-    factoryWithRegistryContract,
+    sidechainFactory,
+    factory,
+    proposalCreator,
   }
 
   return result
@@ -89,16 +99,12 @@ async function generate(config = defaultConfig) {
 
 async function generateWithLog() {
   const contracts = await generate()
-  console.log('MultipleInstanceFactory contract: ', contracts.factoryContract.implementation.address)
-  console.log('MultipleInstanceFactory proxy contract: ', contracts.factoryContract.proxy.address)
-  console.log(
-    'Instance factory with registry contract: ',
-    contracts.factoryWithRegistryContract.implementation.address,
-  )
-  console.log(
-    'Instance factory with registry proxy contract: ',
-    contracts.factoryWithRegistryContract.proxy.address,
-  )
+  console.log('SidechainInstanceFactory contract: ', contracts.sidechainFactory.implementation.address)
+  console.log('SidechainInstanceFactory proxy contract: ', contracts.sidechainFactory.proxy.address)
+  console.log('Instance factory contract: ', contracts.factory.implementation.address)
+  console.log('Instance factory proxy contract: ', contracts.factory.proxy.address)
+  console.log('Proposal creator contract: ', contracts.proposalCreator.implementation.address)
+  console.log('Proposal creator proxy contract: ', contracts.proposalCreator.proxy.address)
   return contracts
 }
 

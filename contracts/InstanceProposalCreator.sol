@@ -5,17 +5,19 @@ pragma abicoder v2;
 
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import "./AddInstanceProposal.sol";
-import "./InstanceFactory.sol";
+import "./interfaces/IInstanceFactory.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC20Permit } from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import { IUniswapV3PoolState } from "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolState.sol";
+import { Initializable } from "@openzeppelin/contracts/proxy/Initializable.sol";
 
-contract InstanceFactoryWithRegistry is InstanceFactory {
+contract InstanceProposalCreator is Initializable {
   using Address for address;
 
   address public immutable governance;
   address public immutable torn;
+  IInstanceFactory public immutable instanceFactory;
   address public immutable instanceRegistry;
   IUniswapV3Factory public immutable UniswapV3Factory;
   address public immutable WETH;
@@ -36,12 +38,14 @@ contract InstanceFactoryWithRegistry is InstanceFactory {
 
   constructor(
     address _governance,
+    address _instanceFactory,
     address _instanceRegistry,
     address _torn,
     address _UniswapV3Factory,
     address _WETH
   ) {
     governance = _governance;
+    instanceFactory = IInstanceFactory(_instanceFactory);
     instanceRegistry = _instanceRegistry;
     torn = _torn;
     UniswapV3Factory = IUniswapV3Factory(_UniswapV3Factory);
@@ -53,26 +57,9 @@ contract InstanceFactoryWithRegistry is InstanceFactory {
    * @dev this contract will be deployed behind a proxy and should not assign values at logic address,
    *      params left out because self explainable
    * */
-  function initialize(
-    address _verifier,
-    address _hasher,
-    uint32 _merkleTreeHeight,
-    address _governance,
-    uint16 _TWAPSlotsMin,
-    uint256 _creationFee
-  ) external initializer {
-    initialize(_verifier, _hasher, _merkleTreeHeight, _governance);
+  function initialize(uint16 _TWAPSlotsMin, uint256 _creationFee) external initializer {
     TWAPSlotsMin = _TWAPSlotsMin;
     creationFee = _creationFee;
-  }
-
-  /**
-   * @dev Creates new Tornado instances. Throws if called by any account other than the Governance.
-   * @param _denomination denomination of new Tornado instance
-   * @param _token address of ERC20 token for a new instance
-   */
-  function createInstanceClone(uint256 _denomination, address _token) public override onlyGovernance returns (address) {
-    return super.createInstanceClone(_denomination, _token);
   }
 
   /**
@@ -125,14 +112,14 @@ contract InstanceFactoryWithRegistry is InstanceFactory {
     uint256[] memory _denominations,
     uint32[] memory _protocolFees
   ) internal returns (address) {
-    require(_token.isContract(), "Token is not contract");
+    require(_token == address(0) || _token.isContract(), "Token is not contract");
     require(_denominations.length > 0, "Empty denominations");
     require(_denominations.length == _protocolFees.length, "Incorrect denominations/fees length");
 
     // check Uniswap Pool
     for (uint8 i = 0; i < _protocolFees.length; i++) {
-      if (_protocolFees[i] > 0) {
-        require(_protocolFees[i] <= 10000, "Protocol fee is more than 100%");
+      require(_protocolFees[i] <= 10000, "Protocol fee is more than 100%");
+      if (_protocolFees[i] > 0 && _token != address(0)) {
         // pool exists
         address poolAddr = UniswapV3Factory.getPool(_token, WETH, _uniswapPoolSwappingFee);
         require(poolAddr != address(0), "Uniswap pool is not exist");
@@ -144,19 +131,26 @@ contract InstanceFactoryWithRegistry is InstanceFactory {
     }
 
     address proposal = address(
-      new AddInstanceProposal(address(this), instanceRegistry, _token, _uniswapPoolSwappingFee, _denominations, _protocolFees)
+      new AddInstanceProposal(
+        address(instanceFactory),
+        instanceRegistry,
+        _token,
+        _uniswapPoolSwappingFee,
+        _denominations,
+        _protocolFees
+      )
     );
     emit NewGovernanceProposalCreated(proposal);
 
     return proposal;
   }
 
-  function setCreationFee(uint256 _creationFee) external onlyAdmin {
+  function setCreationFee(uint256 _creationFee) external onlyGovernance {
     creationFee = _creationFee;
     emit NewCreationFeeSet(_creationFee);
   }
 
-  function setTWAPSlotsMin(uint16 _TWAPSlotsMin) external onlyAdmin {
+  function setTWAPSlotsMin(uint16 _TWAPSlotsMin) external onlyGovernance {
     TWAPSlotsMin = _TWAPSlotsMin;
     emit NewTWAPSlotsMinSet(_TWAPSlotsMin);
   }

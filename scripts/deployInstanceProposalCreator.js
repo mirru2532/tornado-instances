@@ -14,14 +14,14 @@ async function deploy({ address, bytecode, singletonFactory }) {
 async function main() {
   const singletonFactory = await ethers.getContractAt('SingletonFactory', config.singletonFactory)
   const contracts = await generate()
-  await deploy({ ...contracts.factoryContract.implementation, singletonFactory })
-  await deploy({ ...contracts.factoryContract.proxy, singletonFactory })
-  console.log(
-    `MultipleInstanceFactory contract have been deployed on ${contracts.factoryContract.implementation.address} address`,
-  )
-  console.log(
-    `MultipleInstanceFactory proxy contract have been deployed on ${contracts.factoryContract.proxy.address} address`,
-  )
+  await deploy({ ...contracts.factory.implementation, singletonFactory })
+  console.log(`Instance factory contract have been deployed on ${contracts.factory.implementation.address}`)
+  await deploy({ ...contracts.factory.proxy, singletonFactory })
+  console.log(`Instance factory proxy contract have been deployed on ${contracts.factory.proxy.address}`)
+  await deploy({ ...contracts.proposalCreator.implementation, singletonFactory })
+  console.log(`Proposal creator have been deployed on ${contracts.proposalCreator.implementation.address}`)
+  await deploy({ ...contracts.proposalCreator.proxy, singletonFactory })
+  console.log(`Proposal creator proxy have been deployed on ${contracts.proposalCreator.proxy.address}`)
 }
 
 main()
